@@ -8,7 +8,7 @@ Rules tagged `(test)` are enforced by `npm test`. A `(planned)` rule becomes `(t
 - **PHYS-04** (test) Kinematic motion is smooth. Position and velocity are continuous within a shot except at declared impacts, and acceleration stays within declared limits.
 - **PHYS-05** (planned) Matter never appears or vanishes in shot. A body's lifetime starts or ends only at its chapter's start or end, at a cut, or outside the camera's view.
 - **CAM-01** (test) Cameras never enter a body. A clearance sphere of 3 cm around the camera stays clear of every collider, and the near plane lies inside that sphere.
-- **CAM-02** (test) Within a shot, camera motion meets PHYS-04's limits. Cuts happen only at declared instants, on whole frames at the base rate.
+- **CAM-02** (test) Within a shot, the camera's position and its target meet PHYS-02's and PHYS-04's checks at declared camera speed and acceleration limits, its view direction turns within declared angular speed and angular acceleration limits, and its fov and roll change within declared rate limits. Cuts happen only at declared instants, on whole frames at the base rate.
 - **CAM-03** (test) The camera the render uses is the camera the checks measure.
 - **TIME-01** (test) The world state at time t is identical at every fps (30, 60, 24 and 50 are tested).
 - **TIME-02** (test) No unseeded randomness or wall-clock reads in world, bake or render code.

@@ -1,11 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { SIM_HZ } from "../../bake/inputs";
-import {
-  CAMERA_MAX_ACCEL,
-  CAMERA_MAX_SPEED,
-  cameraClearance,
-} from "../../physics/cameraChecks";
+import { cameraClearance, roughCamera } from "../../physics/cameraChecks";
 import { collide } from "../../physics/collision";
 import {
   roughMotion,
@@ -25,7 +21,6 @@ import { solidsAt, type Body, type Scene } from "../../world/body";
 import { cameraAt, validateShots } from "../../world/camera";
 import { STEADY, storyTimeOfFrame } from "../../world/clock";
 import { restBottom, seatedBottom, seatsOf } from "../../world/fit";
-import { at, body } from "../../world/fixtures";
 import { SCAN_MATCH } from "../../world/listing";
 import { addressOf, tilePose } from "../../world/tape";
 import { TRACK_RESOLUTION, type BakeTrack } from "../../world/track";
@@ -179,24 +174,12 @@ describe("stencil-seat scene", () => {
     expect(cameraClearance(scene, { hz: CHECK_HZ })).toEqual([]);
   });
 
-  test("[CAM-02] camera motion is smooth and cuts land on whole frames", () => {
+  test("[CAM-02] camera position, target, view direction, fov and roll move smoothly within each shot, and cuts land on whole frames", () => {
     expect(validateShots(scene.shots, scene.duration)).toEqual([]);
-    const rough = scene.shots.flatMap((shot) => {
-      const lens: Body = {
-        ...body(`camera-${shot.name}`, "kinematic", (t) =>
-          at(shot.at(t).position),
-        ),
-        maxSpeed: CAMERA_MAX_SPEED,
-        maxAccel: CAMERA_MAX_ACCEL,
-      };
-      const opts = { hz: CHECK_HZ, from: shot.from, to: shot.to };
-      return [
-        ...flagged([lens], teleports, opts),
-        ...flagged([lens], roughMotion, opts),
-      ];
-    });
     expect(scene.shots.map((shot) => shot.name)).toEqual(["wide", "follow"]);
-    expect(rough).toEqual([]);
+    expect(
+      scene.shots.flatMap((shot) => roughCamera(shot, CHECK_HZ)),
+    ).toEqual([]);
   });
 
   test("[TIME-01] the world is identical at every fps", () => {
