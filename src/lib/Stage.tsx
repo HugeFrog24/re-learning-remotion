@@ -6,7 +6,6 @@ import { PerspectiveCamera } from "three";
 
 type Vec3 = readonly [number, number, number];
 
-/** Full-frame 3D canvas. Put lights, meshes and a <CameraRig> inside. */
 export const Stage: React.FC<{
   readonly children: React.ReactNode;
   readonly background?: string;
@@ -27,11 +26,6 @@ export const Stage: React.FC<{
   );
 };
 
-/**
- * Drives the default camera from props. Feed it values computed from
- * `useTime()` so camera moves stay on the film clock.
- * Runs in a layout effect, which fires before <ThreeCanvas> renders the frame.
- */
 export const CameraRig: React.FC<{
   readonly position: Vec3;
   readonly target?: Vec3;

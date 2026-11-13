@@ -11,10 +11,6 @@ import {
 import { CameraRig, Stage } from "../lib/Stage";
 import { tween, useTime } from "../lib/time";
 
-/**
- * Placeholder scene: verifies 3D + SFX + film clock end-to-end.
- * Replace once the real storyboard arrives.
- */
 export const CLOCK_TEST_SECONDS = 6;
 
 export const ClockTest: React.FC = () => {
@@ -23,7 +19,7 @@ export const ClockTest: React.FC = () => {
   const t = useTime();
 
   const rise = tween(t, [0.2, 1.4], [-7, 0], Easing.bezier(0.16, 1, 0.3, 1));
-  const spin = t * 0.9; // radians per second — framerate independent
+  const spin = t * 0.9;
   const camZ = tween(t, [0, 6], [15, 11], Easing.inOut(Easing.cubic));
 
   return (
