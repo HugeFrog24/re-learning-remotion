@@ -25,6 +25,7 @@
     "@types/three": "0.170.0",
     "@types/web": "0.0.166",
     "eslint": "10.12.0",
+    "jscpd": "5.4.3",
     "prettier": "3.8.1",
     "typescript": "5.9.3"
   },
@@ -32,7 +33,13 @@
     "dev": "remotion studio",
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src && tsc",
+    "dupes:exact": "jscpd src --mode strict --min-tokens 30 --reporters ai --no-tips",
+    "dupes:renamed": "jscpd src --mode strict --min-tokens 30 --ignore-identifiers --ignore-literals --reporters ai --no-tips",
+    "dupes:near": "jscpd src --mode strict --min-tokens 30 --max-gap-lines 3 --reporters ai --no-tips",
+    "dupes:similar": "jscpd src --similarity 0.8 --reporters ai --no-tips",
+    "dupes:semantic": "jscpd src --semantic --reporters ai --no-tips",
+    "dupes": "npm run dupes:exact && npm run dupes:renamed && npm run dupes:near && npm run dupes:similar && npm run dupes:semantic"
   },
   "allowScripts": {
     "esbuild": false
