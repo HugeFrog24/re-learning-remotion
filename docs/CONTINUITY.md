@@ -26,5 +26,5 @@ Rules tagged `(test)` are enforced by `npm test`. A `(planned)` rule becomes `(t
 - **RES-01** (test) The 3D canvas renders at the render's pixel ratio for every ratio from 1 to 4. 4K (`--scale=2`) and 8K (`--scale=4`) draw real pixels, not an enlargement.
 - **RES-02** (test) Every pixel-measured effect parameter is defined in 1080p pixels and scales with the pixel ratio. Its extent, as a fraction of the frame, is identical at ratios 1, 2 and 4.
 - **RES-03** (test) At every scale (ratio 1, 2 and 4) and in every shot, the glyph textures keep at least one texel per output pixel at the closest framing of any tile face, and no texture exceeds the GPU's maximum texture size.
-- **RES-04** (planned) A still rendered at --scale=2 or --scale=4, box-downsampled to 1080×1920, matches the --scale=1 still: mean absolute difference ≤ 2/255 per channel, and no 64×64 block above 8/255. It runs with `npm run test:render`, not `npm test`.
+- **RES-04** (test) A still rendered at --scale=2 or --scale=4, box-downsampled to 1080×1920, matches the --scale=1 still: mean absolute difference ≤ 2/255 per channel, and no 64×64 block above 8/255. It runs with `npm run test:render`, not `npm test`.
 - **DOC-01** (test) The meta-test linking CONTINUITY IDs to tests.
