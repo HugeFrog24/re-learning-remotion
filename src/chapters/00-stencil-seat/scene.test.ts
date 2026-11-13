@@ -141,26 +141,30 @@ describe("stencil-seat scene", () => {
     expect(hovering.map((t) => stencil.poseAt(t))).toEqual(
       hovering.map(hoverAt),
     );
+    const lag = 5;
+    const span = (lag * dt) ** 2;
+    const rounding = (2 * TRACK_RESOLUTION) / span;
+    expect(rounding).toBeLessThan(0.05);
     const heights = grid.map((t) => stencil.poseAt(t).position[1]);
     const released = grid.findIndex((t) => t >= RELEASE_AT);
     const touchdown = RELEASE_AT + Math.sqrt((2 * RELEASE_LIFT) / G);
-    const landing = grid.findIndex((t) => t >= touchdown);
-    const accelerations = heights
-      .slice(released + 1, landing - 1)
-      .map(
-        (height, i) =>
-          (heights[released + i + 2] - 2 * height + heights[released + i]) /
-          (dt * dt),
-      );
-    expect(accelerations.length).toBeGreaterThan(20);
+    const airborne = grid.findIndex((t) => t >= touchdown) - released;
+    const accelerations = Array.from(
+      { length: airborne - 2 * lag },
+      (_, k) =>
+        (heights[released + k] -
+          2 * heights[released + k + lag] +
+          heights[released + k + 2 * lag]) /
+        span,
+    );
+    expect(accelerations.length).toBeGreaterThanOrEqual(10);
+    expect(accelerations.filter((accel) => Math.abs(accel + G) > 0.05)).toEqual(
+      [],
+    );
     const mean =
       accelerations.reduce((sum, accel) => sum + accel, 0) /
       accelerations.length;
     expect(Math.abs(mean + G)).toBeLessThanOrEqual(0.05);
-    const rounding = (2 * TRACK_RESOLUTION) / (dt * dt);
-    expect(
-      accelerations.filter((accel) => Math.abs(accel + G) > rounding),
-    ).toEqual([]);
   });
 
   test("[PHYS-04] kinematic motion is smooth", () => {
