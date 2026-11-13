@@ -1,4 +1,5 @@
 import type { CameraSetup, Shot } from "../../world/camera";
+import { BASE_HEIGHT, BASE_WIDTH } from "../../render/resolution";
 import { seatedBottom } from "../../world/fit";
 import { TILE_PITCH } from "../../world/units";
 import {
@@ -13,7 +14,7 @@ import {
 import { SCAN, TAPE } from "./initialState";
 
 const FOV = 30;
-const ASPECT = 9 / 16;
+const ASPECT = BASE_WIDTH / BASE_HEIGHT;
 const FILL = 0.9;
 const RISE = 0.35;
 const WIDE_MARGIN_TILES = 4;

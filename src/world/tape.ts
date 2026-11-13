@@ -49,3 +49,8 @@ export const addressOf = (tape: Tape, index: number): bigint => {
   checkSpan(tape, index);
   return tape.base + BigInt(index);
 };
+
+export const TILE_ID_PREFIX = "tile-";
+
+export const tileId = (tape: Tape, index: number): string =>
+  `${TILE_ID_PREFIX}${addressOf(tape, index).toString(16).toUpperCase()}`;

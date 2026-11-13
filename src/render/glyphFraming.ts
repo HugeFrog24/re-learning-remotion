@@ -1,0 +1,82 @@
+import { Object3D, PerspectiveCamera, Vector3 } from "three";
+import { sampleTimes } from "../physics/sweep";
+import type { Body, Scene } from "../world/body";
+import { cameraAt, type CameraSetup } from "../world/camera";
+import { TILE_ID_PREFIX } from "../world/tape";
+import { BASE_HEIGHT, BASE_WIDTH } from "./resolution";
+
+const cameraFor = ({ position, target, fov, roll }: CameraSetup) => {
+  const camera = new PerspectiveCamera(
+    fov,
+    BASE_WIDTH / BASE_HEIGHT,
+    0.001,
+    1000,
+  );
+  camera.position.set(...position);
+  camera.lookAt(new Vector3(...target));
+  camera.rotateZ(roll);
+  camera.updateMatrixWorld(true);
+  return camera;
+};
+
+const frontFace = (body: Body, t: number): Vector3[] => {
+  const slab = body.localBoxes.find((local) => local.name === "tile");
+  if (!slab) throw new Error(`${body.id} has no tile slab`);
+  const { position, quaternion } = body.poseAt(t);
+  const holder = new Object3D();
+  holder.position.set(...position);
+  holder.quaternion.set(...quaternion);
+  holder.updateMatrixWorld(true);
+  const [cx, cy, cz] = slab.center;
+  const [w, h, d] = slab.size;
+  return [
+    [-1, -1],
+    [1, -1],
+    [1, 1],
+    [-1, 1],
+  ].map(([sx, sy]) =>
+    new Vector3(cx + (sx * w) / 2, cy + (sy * h) / 2, cz + d / 2).applyMatrix4(
+      holder.matrixWorld,
+    ),
+  );
+};
+
+const framePixels = (
+  corners: readonly Vector3[],
+  camera: PerspectiveCamera,
+) => {
+  const inView = corners.map((corner) =>
+    corner.clone().applyMatrix4(camera.matrixWorldInverse),
+  );
+  if (inView.some((corner) => corner.z >= 0)) return 0;
+  const screen = corners.map((corner) => {
+    const ndc = corner.clone().project(camera);
+    return [((ndc.x + 1) / 2) * BASE_WIDTH, ((1 - ndc.y) / 2) * BASE_HEIGHT];
+  });
+  const xs = screen.map(([x]) => x);
+  const ys = screen.map(([, y]) => y);
+  const [left, right] = [Math.min(...xs), Math.max(...xs)];
+  const [top, bottom] = [Math.min(...ys), Math.max(...ys)];
+  if (right < 0 || left > BASE_WIDTH || bottom < 0 || top > BASE_HEIGHT) {
+    return 0;
+  }
+  return Math.max(right - left, bottom - top);
+};
+
+export const closestGlyphPixels = (
+  scene: Scene,
+  hz: number,
+): { t: number; tile: string; pixels: number } => {
+  const tiles = scene.bodies.filter((body) =>
+    body.id.startsWith(TILE_ID_PREFIX),
+  );
+  let best = { t: 0, tile: "", pixels: 0 };
+  for (const t of sampleTimes(hz, 0, scene.duration)) {
+    const camera = cameraFor(cameraAt(scene.shots, t));
+    for (const body of tiles) {
+      const pixels = framePixels(frontFace(body, t), camera);
+      if (pixels > best.pixels) best = { t, tile: body.id, pixels };
+    }
+  }
+  return best;
+};

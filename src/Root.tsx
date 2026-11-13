@@ -1,5 +1,6 @@
 import { Composition, Folder } from "remotion";
 import { getFps, secondsToFrames } from "./config";
+import { BASE_HEIGHT, BASE_WIDTH } from "./render/resolution";
 import { Main, MAIN_SECONDS } from "./Main";
 import { ClockTest, CLOCK_TEST_SECONDS } from "./scenes/ClockTest";
 import { LookSpike, LOOK_SPIKE_SECONDS } from "./spikes/LookSpike";
@@ -12,8 +13,8 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="Main"
         component={Main}
-        width={1080}
-        height={1920}
+        width={BASE_WIDTH}
+        height={BASE_HEIGHT}
         fps={fps}
         durationInFrames={secondsToFrames(MAIN_SECONDS, fps)}
       />
@@ -21,8 +22,8 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           id="ClockTest"
           component={ClockTest}
-          width={1080}
-          height={1920}
+          width={BASE_WIDTH}
+          height={BASE_HEIGHT}
           fps={fps}
           durationInFrames={secondsToFrames(CLOCK_TEST_SECONDS, fps)}
         />
@@ -31,8 +32,8 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           id="LookSpike"
           component={LookSpike}
-          width={1080}
-          height={1920}
+          width={BASE_WIDTH}
+          height={BASE_HEIGHT}
           fps={fps}
           durationInFrames={secondsToFrames(LOOK_SPIKE_SECONDS, fps)}
           defaultProps={{ variant: "bloom" as const }}

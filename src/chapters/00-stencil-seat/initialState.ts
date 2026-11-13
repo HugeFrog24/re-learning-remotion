@@ -3,7 +3,7 @@ import { parsePattern } from "../../world/bytes";
 import { box, IDENTITY_POSE, type Pose, type Vec3 } from "../../world/geometry";
 import { DEMO_TAPE, SCAN_PATTERN } from "../../world/listing";
 import { tileBoxes } from "../../world/pins";
-import { addressOf, tapeOf, tilePose } from "../../world/tape";
+import { tapeOf, tileId, tilePose } from "../../world/tape";
 import { releasedPose, type BakeTrack } from "../../world/track";
 import { stencilBoxes } from "../../world/stencil";
 import { TILE_PITCH, TILE_SIZE } from "../../world/units";
@@ -30,12 +30,9 @@ const slab = (id: string, min: Vec3, max: Vec3): Body => {
   });
 };
 
-const tileId = (index: number) =>
-  `tile-${addressOf(TAPE, index).toString(16).toUpperCase()}`;
-
 export const fixedBodies = (): readonly Body[] => [
   ...TAPE.bytes.map((byte, index) =>
-    staticBody(tileId(index), tileBoxes(byte), tilePose(TAPE, index)),
+    staticBody(tileId(TAPE, index), tileBoxes(byte), tilePose(TAPE, index)),
   ),
   slab(
     "rail",
