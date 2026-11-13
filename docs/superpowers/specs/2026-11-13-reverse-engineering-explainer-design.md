@@ -58,7 +58,7 @@ It is an ethical, educational piece that explains concepts. It is **not** a tuto
 
 - **Stack (already scaffolded):**
   - Remotion 4.0.543
-  - `@remotion/three` with `@react-three/fiber` 9.2.0 and `three` 0.178.0
+  - `@remotion/three` with `@react-three/fiber` 9.8.2 and `three` 0.187.0
   - `@remotion/media` and `@remotion/sfx`
   - TypeScript
 - **No state across frames.** Remotion renders frames in parallel browser tabs and allows random access to any frame. So:

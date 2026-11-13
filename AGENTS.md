@@ -26,7 +26,21 @@
   - Hovering tools are the only declared exception to gravity.
   - Matter never appears or vanishes in shot. Meaning (labels, plates, beams) is light.
 - **Bakes must match their inputs.** After changing choreography, re-bake with `UPDATE_BAKES=1 npx vitest run src/bake/bakes.test.ts`.
-- **Before changing a chapter, read `docs/CONTINUITY.md`.** Rules tagged `(test)` are enforced by `npm test`.
+- **Before changing a chapter, read `docs/CONTINUITY.md`.** Rules tagged `(test)` are enforced by `npm test`, except RES-04, which renders stills and runs with `npm run test:render`.
 - **The reference clones under `reference/`** are informational only. They are never committed, never shown on screen, and never named in project files.
+
+## Adding a chapter
+
+1. Make `src/chapters/NN-name/`, following `00-stencil-seat`:
+   - `initialState.ts`: the bodies at t = 0. Body ids must be unique; they key the React meshes, the bake tracks and the sweep's reports.
+   - `choreography.ts`: kinematic and hover paths as pure functions of story time, authored in seconds. Releases fall on the 1/960 s step grid.
+   - `cameras.ts`: the shot list. Cuts land on whole frames at 30 fps.
+   - `scene.ts`: `xScene(track: BakeTrack | null): Scene`, which assembles the bodies and the shots.
+   - The Composition component: it imports the committed bake JSON, builds the scene once, and renders `<SceneView scene={…} clock={…} />`.
+2. Register the scene in `BAKES` (`src/bake/registry.ts`). Bake it with `UPDATE_BAKES=1 npx vitest run src/bake/bakes.test.ts`, and commit `src/bakes/<id>.json` with the manifest. BAKE-01 re-simulates every registered bake in `npm test`.
+3. Add the Composition to `src/Root.tsx` through `Film`, in the "Chapters" folder, and to `Main`.
+4. Give every new kind of body a look in `SceneView`'s `BodyMesh`, which throws on a body it cannot draw.
+5. Test it: a `scene.test.ts` that runs `validateScene` (`src/bake/inputs.ts`) and the PHYS, CAM and TIME rules on the scene, and a `framing.test.ts` for the chapter's framing targets.
+6. Before committing, run `npm run strip`, `npm run lint`, `npm test` and `npm run dupes`, and `npm run test:render` when render code or framing changed.
 
 Reference repositories (never named under src/, public/ or docs/): Dobby, shadowhook, android-inline-hook

@@ -1,6 +1,6 @@
 # Continuity rules
 
-Rules tagged `(test)` are enforced by `npm test`. A `(planned)` rule becomes `(test)` in the commit that adds its test. Test titles carry the rule ID, for example `"[PHYS-01] …"`, and the meta-test DOC-01 fails if a `(test)` rule has no citing test or a test cites an unknown ID.
+Rules tagged `(test)` are enforced by `npm test`, except RES-04, which renders stills and runs with `npm run test:render`. A `(planned)` rule becomes `(test)` in the commit that adds its test. Test titles carry the rule ID, for example `"[PHYS-01] …"`, and the meta-test DOC-01 fails if a `(test)` rule has no citing test or a test cites an unknown ID.
 
 - **PHYS-01** (test) Nothing passes through anything. An independent collision checker (spheres, OBBs, half-spaces) sweeps every pair at 960 Hz in story time. Tolerance is 0.5 mm for simulated resting contacts and 0 for everything else.
 - **PHYS-02** (test) Nothing teleports. No body moves further between samples than its declared maximum speed allows.
