@@ -136,7 +136,6 @@ describe("sweep", () => {
     const started = performance.now();
     const found = sweep(scene(7.7, [...tiles, floor]), { hz: CHECK_HZ });
     const seconds = (performance.now() - started) / 1000;
-    console.log(`sweep ${seconds.toFixed(2)}s`);
     expect(found).toEqual([]);
     expect(seconds).toBeLessThan(60);
   });
