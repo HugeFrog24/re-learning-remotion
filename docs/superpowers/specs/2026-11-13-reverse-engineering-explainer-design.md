@@ -89,7 +89,7 @@ It is an ethical, educational piece that explains concepts. It is **not** a tuto
    - But 30 Hz is too coarse for impacts: a stamp at 3 m/s moves 10 cm per tick, so clipping between ticks goes unchecked. Blended frames of a tumbling piece can also intersect something even when both ticks are clean.
 3. **Hybrid: authored motion plus a baked simulation. Chosen by the owner.**
    - **Authored:** things that move with intent are kinematic formulas of time. These are the cameras, the CPU sled, the hovering stencils and stamp, and pin flips.
-   - **Simulated:** their consequences (name tags falling off, things settling) run in **Rapier's cross-platform deterministic build** (`@dimforge/rapier3d-deterministic-compat`, 0.21.0). It steps at a fixed 240 Hz, once, in Node.
+   - **Simulated:** their consequences (name tags falling off, things settling) run in **Rapier's cross-platform deterministic build** (`@dimforge/rapier3d-deterministic-compat`, 0.21.0). It steps at a fixed **960 Hz**, once, in Node. This was raised from 240 Hz after measuring it during planning: a 44 mm drop sank 1.6 mm into the floor on impact at 240 Hz, but only 0.11 mm at 960 Hz with continuous collision detection.
    - **Baked:** the result is written to a file that the film samples at any fps, so every render tab sees identical motion.
    - **Costs accepted:**
      - a WebAssembly dependency and a bake step
@@ -276,7 +276,7 @@ src/
   render/              Stage, CameraRig, materials, tile/pin/sled/stencil/stamp components
   text/strings.ts      every on-screen string (English); German later = a second table
   Main.tsx, Root.tsx   Main plus one connected composition per chapter (Folder "Chapters")
-public/bakes/          one bake per chapter + manifest with an input hash (committed (my call): renders need no bake step)
+src/bakes/             one bake per chapter + manifest with an input hash (committed (my call): renders need no bake step)
 scripts/bake.(m)ts
 docs/CONTINUITY.md, AGENTS.md, CLAUDE.md
 ```
@@ -287,9 +287,9 @@ docs/CONTINUITY.md, AGENTS.md, CLAUDE.md
 ### 7.2 Motion
 
 - **Kinematic bodies** are `(t) => pose`. This includes pins during writes, hovering tools and the sled.
-- **Dynamic bodies** live in `bake/`. Kinematic tracks drive them as kinematic Rapier bodies. They are stepped at 240 Hz and stored as position and quaternion per step.
+- **Dynamic bodies** live in `bake/`. Kinematic tracks drive them as kinematic Rapier bodies. They are stepped at 960 Hz and stored as position and quaternion per step, from release onwards.
 - **Sampling:** at any *t*, lerp positions and slerp rotations between neighbouring samples.
-- The renderer loads bakes with `staticFile` and a delayed render.
+- Bakes are JSON files under `src/bakes/`. The renderer and the tests import them statically, so nothing loads asynchronously.
 
 ### 7.3 Cameras
 
@@ -325,7 +325,7 @@ docs/CONTINUITY.md, AGENTS.md, CLAUDE.md
 
 | ID | Rule |
 |---|---|
-| PHYS-01 | Nothing passes through anything. An independent collision checker (spheres, OBBs, half-spaces) sweeps every pair at 240 Hz in story time. Tolerance is 0.5 mm for simulated resting contacts and 0 for everything else. |
+| PHYS-01 | Nothing passes through anything. An independent collision checker (spheres, OBBs, half-spaces) sweeps every pair at 960 Hz in story time. Tolerance is 0.5 mm for simulated resting contacts and 0 for everything else. |
 | PHYS-02 | Nothing teleports. No body moves further between samples than its declared maximum speed allows. |
 | PHYS-03 | Gravity is 9.81 m/s² at true scale for every body, except hovering tools while they hover. Hovering tools still collide, and fall once released. |
 | PHYS-04 | Kinematic motion is smooth. Position and velocity are continuous within a shot except at declared impacts, and acceleration stays within declared limits. |
