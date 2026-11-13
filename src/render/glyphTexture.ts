@@ -2,8 +2,12 @@ import { loadFont } from "@remotion/google-fonts/JetBrainsMono";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useDelayRender } from "remotion";
 import { CanvasTexture, SRGBColorSpace } from "three";
+import { GLYPH } from "./look";
 
 const WEIGHT = "700";
+const CAP_HEIGHT_PER_EM = 0.73;
+
+export const GLYPH_TEXT_HEIGHT = GLYPH.em * CAP_HEIGHT_PER_EM;
 
 export type FacePaint = {
   readonly width: number;
