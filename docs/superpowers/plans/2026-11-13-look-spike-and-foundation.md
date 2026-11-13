@@ -548,22 +548,27 @@ Message: `feat: deterministic 960 Hz bake pipeline`.
 - **Tape:** `{ base: 0x140012A20n, bytes: tapeBytes(DEMO_TAPE), origin: [0, 0, 0] }`. Each tile is a static body `tile-<hex address>`.
 - **Rail:** a static box spanning x ∈ [−0.02, 48·0.044], y ∈ [−0.01, 0], z ∈ [−0.03, 0.03].
 - **Floor:** a static box spanning x and z ∈ [−3, 3] and y ∈ [−0.11, −0.01].
-- **Stencil:** the scan pattern, as a simulated body with `hovering: true`, `maxSpeed: 0.3`, `maxAccel: 5` and material `{ density: 600, friction: 0.6, restitution: 0.05 }`.
+- **Stencil:** the scan pattern, as a simulated body with `hovering: true`, `maxSpeed: 0.5`, `maxAccel: 12` and material `{ density: 600, friction: 0.6, restitution: 0.05 }`.
 
 **Choreography** (story seconds; every move uses smoothstep):
 - **Hover height:** the hover underside is `seatedBottom + 0.02`.
 - **0–1.0 s:** hold over index 17.
+- **Byte-by-byte snapping (owner).** A pattern can't match half a byte, so the stencil only ever rests exactly over whole tiles. It moves in quick one-pitch snaps with a brief dwell, never as a smooth ride.
 - **For each k from 17 to 24:**
-  1. Lower in 0.20 s to `restBottom(k) + 1e-6`. The 1 µm margin keeps the bisection's error from becoming a penetration.
+  1. Lower in 0.15 s to `restBottom(k) + 1e-6`. The 1 µm margin keeps the bisection's error from becoming a penetration.
   2. Hold for 0.10 s.
-  3. Raise in 0.15 s.
-  4. Slide one pitch in 0.25 s.
+  3. Raise in 0.10 s.
+  4. Snap exactly one `TILE_PITCH` in 0.15 s. Smoothstep gives zero velocity at both ends, peaking at 0.44 m/s and 11.7 m/s².
+  5. Dwell for 0.05 s, at rest and aligned over tile k+1.
+
+  That is 0.55 s per offset.
 - **At k = 25:** lower in 0.30 s to `seatedBottom + 0.003`. `RELEASE_AT` is the end of that lowering, where velocity is 0.
-- **Duration:** `STENCIL_SEAT_SECONDS = RELEASE_AT + 2.0`.
+- **Duration:** `STENCIL_SEAT_SECONDS = RELEASE_AT + 2.0`. With these timings, `RELEASE_AT = 1.0 + 8 × 0.55 + 0.30 = 5.7` s, and the scene lasts 7.7 s, which is 231 frames at 30 fps.
 
 **Cameras:**
 - **`wide` (0 to 1.0 s):** static, with the whole stencil plus 4 tiles on each side in frame.
-- **`follow` (1.0 s to the end):** the camera tracks the stencil centre's x as it was 0.15 s earlier (a pure lag), with `fov = 30`.
+- **`follow` (1.0 s to the end):** one smooth pan, decoupled from the snaps, with `fov = 30`. A camera tied to the snapping stencil would break CAM-02's 2 m/s² limit.
+  - x eases with smoothstep from the stencil centre over index 17 (at t = 1.0) to the stencil centre over index 25 (at `RELEASE_AT`), then holds. That peaks at about 0.1 m/s².
   - It sits at the distance where the 0.616 m stencil fills 90 % of the 9:16 width: about 2.27 m. The horizontal half-angle is `atan(tan(15°)·9/16)`.
   - It is slightly above, at y + 0.35 m, looking at the stencil.
 

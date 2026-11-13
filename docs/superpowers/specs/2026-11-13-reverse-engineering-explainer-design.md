@@ -229,6 +229,7 @@ The **ruler** (§6) makes both literal.
 ### The stencils (owner: holes for wildcards)
 
 - Wildcard cells are holes. Solid cells carry the expected byte, printed on top for the viewer, and are keyed underneath to that byte's bit pattern.
+- **It snaps byte by byte (owner).** A pattern can't match half a byte, so the stencil only ever rests exactly over whole tiles. It steps one tile pitch at a time with a brief dwell, never as a smooth ride, and the camera pans smoothly underneath the snaps.
 - At each offset the hovering stencil lowers to test. It is blocked by the first wrong bit.
 - Where every bit fits, it is released and drops the last few millimetres flush, with a clack. The wildcard tiles show through the holes.
 - **The collision tests therefore prove the match.** The matte surface and the tightening shadow show the fit.
