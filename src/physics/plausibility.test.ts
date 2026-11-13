@@ -1,17 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Body } from "../world/body";
+import { at, body } from "../world/fixtures";
 import { IDENTITY_POSE } from "../world/geometry";
 import { roughMotion, teleports } from "./plausibility";
 
 const along = (poseX: (t: number) => number, extra: Partial<Body> = {}): Body => ({
-  id: "m",
-  motion: "kinematic",
-  hovering: false,
-  maxSpeed: 1,
-  maxAccel: 5,
-  impacts: [],
-  localBoxes: [],
-  poseAt: (t) => ({ ...IDENTITY_POSE, position: [poseX(t), 0, 0] }),
+  ...body("m", "kinematic", (t) => at([poseX(t), 0, 0])),
   ...extra,
 });
 

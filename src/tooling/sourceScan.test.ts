@@ -6,14 +6,27 @@ const filesIn = (root: string) =>
     `${root}/${file}`.split("\\").join("/"),
   );
 
-test("[TIME-02] no unseeded randomness or wall-clock reads", () => {
-  const offenders = filesIn("src")
+const sources = () =>
+  filesIn("src")
     .filter((file) => /\.tsx?$/.test(file))
-    .filter((file) => !file.endsWith(".test.ts") && !file.startsWith("src/tooling/"))
-    .filter((file) =>
-      /Math\.random|Date\.now|new Date\(|performance\.now/.test(readFileSync(file, "utf8")),
+    .filter(
+      (file) => !file.endsWith(".test.ts") && !file.startsWith("src/tooling/"),
     );
-  expect(offenders).toEqual([]);
+
+const offending = (pattern: RegExp, files: readonly string[]) =>
+  files.filter((file) => pattern.test(readFileSync(file, "utf8")));
+
+test("[TIME-02] no unseeded randomness or wall-clock reads", () => {
+  expect(
+    offending(/Math\.random|Date\.now|new Date\(|performance\.now/, sources()),
+  ).toEqual([]);
+});
+
+test("only bake code loads Rapier, Node built-ins or the Node-only bake modules", () => {
+  const outsideBake = sources().filter((file) => !file.startsWith("src/bake/"));
+  expect(
+    offending(/from "(node:|@dimforge\/|[./]*\/bake\/(simulate|inputs)")/, outsideBake),
+  ).toEqual([]);
 });
 
 test("[REF-01] reference hooking libraries are never named", () => {

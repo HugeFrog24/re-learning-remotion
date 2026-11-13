@@ -11,7 +11,7 @@ export type Violation = { t: number; a: string; b: string; depth: number };
 
 export type SweepOptions = { hz: number; from?: number; to?: number };
 
-const GRID_SLACK = 1e-9;
+export const GRID_SLACK = 1e-9;
 
 export const sampleTimes = (hz: number, from: number, to: number): number[] => {
   const times: number[] = [];

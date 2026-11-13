@@ -9,6 +9,7 @@
   },
   "private": true,
   "dependencies": {
+    "@dimforge/rapier3d-deterministic-compat": "0.21.0",
     "@react-three/fiber": "9.8.2",
     "@react-three/postprocessing": "3.2.2",
     "@remotion/cli": "4.0.543",

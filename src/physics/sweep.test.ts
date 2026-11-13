@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Body, Scene } from "../world/body";
 import { solidsAt } from "../world/body";
-import { box, IDENTITY_POSE, toObb, type Pose, type Vec3 } from "../world/geometry";
+import { at, body } from "../world/fixtures";
+import { box, IDENTITY_POSE, toObb, type Pose } from "../world/geometry";
 import {
   CHECK_HZ,
   KINEMATIC_EPSILON,
@@ -9,25 +10,6 @@ import {
   sampleTimes,
   sweep,
 } from "./sweep";
-
-const at = (position: Vec3): Pose => ({ ...IDENTITY_POSE, position });
-
-const body = (
-  id: string,
-  motion: Body["motion"],
-  poseAt: (t: number) => Pose,
-  size: Vec3 = [0.02, 0.02, 0.02],
-  center: Vec3 = [0, 0, 0],
-): Body => ({
-  id,
-  motion,
-  hovering: false,
-  maxSpeed: 1,
-  maxAccel: 5,
-  impacts: [],
-  localBoxes: [box("b", center, size)],
-  poseAt,
-});
 
 const scene = (duration: number, bodies: Body[]): Scene => ({
   id: "s",
