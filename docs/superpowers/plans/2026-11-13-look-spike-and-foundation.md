@@ -34,7 +34,7 @@ It ends with the stencil-seating moment rendered end to end.
 - Timing is authored in seconds. The render rate changes only via `--props '{"fps":N}'`, never the CLI `--fps` flag.
 - Every composition is 1080×1920, with `fps={getFps()}` and `durationInFrames={secondsToFrames(seconds, fps)}` (from `src/config.ts`).
 - Units are metres, seconds and kg. +y is up. The tape runs along +x, so addresses rise left to right.
-- `SIM_HZ = 960` and `CHECK_HZ = 960`. The tolerance is 0.0005 m when either body in a pair is simulated, and 1e-7 m for every other pair.
+- `SIM_HZ = 960` and `CHECK_HZ = 960`. The tolerance is 0.0005 m when either body in a pair is simulated and free (it never hovers, or its release has passed), and 1e-7 m for every other pair, including a hovering tool before its release (ruling, Task 9).
 - A test that enforces a CONTINUITY rule has the rule's ID in its title, e.g. `test("[PHYS-01] …")`. In the same commit, flip that rule from `(planned)` to `(test)` in `docs/CONTINUITY.md`.
 - Never name the reference hooking libraries listed in `AGENTS.md` under `src/`, `public/` or `docs/` (specs and plans excepted). Code from `reference/tibik-papiertonne` may be ported.
 - Commits are authored by the configured identity (HugeFrog24). **Commit messages are one word, with no body and no trailer** (owner).
