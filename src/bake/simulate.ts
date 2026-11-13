@@ -2,6 +2,7 @@ import RAPIER, {
   type RigidBody,
   type World,
 } from "@dimforge/rapier3d-deterministic-compat";
+import { Quaternion, Vector3 } from "three";
 import { GRID_SLACK, sampleTimes } from "../physics/sweep";
 import type { Body, Scene } from "../world/body";
 import type { LocalBox, Pose, Quat, Vec3 } from "../world/geometry";
@@ -48,18 +49,36 @@ const addActor = (world: World, body: Body, from: number): Actor => {
 };
 
 const hoverVelocity = (hoverAt: (t: number) => Pose, at: number) => {
-  const before = hoverAt(at - 1 / SIM_HZ).position;
-  const now = hoverAt(at).position;
-  const [x, y, z] = now.map((value, i) => (value - before[i]) * SIM_HZ);
-  return vector([x, y, z]);
+  const before = hoverAt(at - 1 / SIM_HZ);
+  const now = hoverAt(at);
+  const turn = new Quaternion(...now.quaternion)
+    .normalize()
+    .multiply(new Quaternion(...before.quaternion).normalize().invert());
+  const sine = Math.hypot(turn.x, turn.y, turn.z);
+  const shortWay = turn.w < 0 ? -1 : 1;
+  const rate =
+    sine > 0
+      ? (shortWay * 2 * Math.atan2(sine, Math.abs(turn.w)) * SIM_HZ) / sine
+      : 0;
+  return {
+    linear: new Vector3(...now.position)
+      .sub(new Vector3(...before.position))
+      .multiplyScalar(SIM_HZ),
+    angular: new Vector3(turn.x, turn.y, turn.z).multiplyScalar(rate),
+  };
 };
 
 const releaseIfDue = (actor: Actor, t: number) => {
   if (actor.body.motion !== "simulated" || actor.released) return;
   const release = releaseOf(actor.body);
   if (release.at - t > GRID_SLACK / SIM_HZ) return;
+  const { linear, angular } = hoverVelocity(release.hoverAt, release.at);
+  const lever = new Vector3()
+    .copy(actor.rigid.worldCom())
+    .sub(actor.rigid.translation());
   actor.rigid.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
-  actor.rigid.setLinvel(hoverVelocity(release.hoverAt, release.at), true);
+  actor.rigid.setLinvel(linear.add(angular.clone().cross(lever)), true);
+  actor.rigid.setAngvel(angular, true);
   actor.released = true;
 };
 

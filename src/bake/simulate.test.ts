@@ -14,6 +14,10 @@ import {
   drone,
   dropScene,
   floor,
+  OFF_CENTRE,
+  SPIN_RATE,
+  spinRelease,
+  spinScene,
   TILE,
   tileRelease,
 } from "./fixtures";
@@ -116,5 +120,73 @@ describe("simulate", () => {
 
   it("survives its JSON round trip unchanged", () => {
     expect(JSON.parse(JSON.stringify(track))).toEqual(track);
+  });
+});
+
+describe("release spin", () => {
+  const dt = 1 / SIM_HZ;
+  const early = 0.1;
+  const late = early + 10.6 * dt;
+  const spinning = spinScene(early, late);
+  let spun: BakeTrack;
+
+  beforeAll(async () => {
+    spun = await simulate(spinning);
+  });
+
+  const recorded = (id: string) => (t: number) => sampleTrack(spun, id, t);
+
+  const yawOf = (pose: Pose) => {
+    const [, y, , w] = pose.quaternion;
+    return 2 * Math.atan2(Math.sign(w) * y, Math.abs(w));
+  };
+
+  const yawRate = (poseAt: (t: number) => Pose, from: number, to: number) =>
+    (yawOf(poseAt(to)) - yawOf(poseAt(from))) / (to - from);
+
+  const spinAfter = (id: string, at: number) =>
+    yawRate(recorded(id), at + 2 * dt, at + 40 * dt);
+
+  const within1Percent = (rate: number, expected = SPIN_RATE) =>
+    expect(Math.abs(rate - expected)).toBeLessThanOrEqual(0.01 * SPIN_RATE);
+
+  it("hands the hover spin over at release, whatever the release order", () => {
+    const before = [
+      yawRate(spinRelease(early, -0.1).hoverAt, early - 8 * dt, early),
+      yawRate(recorded("b"), early, early + 8 * dt),
+    ];
+    const after = [spinAfter("a", early), spinAfter("b", late)];
+    for (const rate of [...before, ...after]) within1Percent(rate);
+    within1Percent(after[0], after[1]);
+  });
+
+  it("keeps an off-centre body's centre of mass moving as it hovered", () => {
+    const local = spinning.bodies[2].localBoxes[0];
+    const flatVelocity = (
+      poseAt: (t: number) => Pose,
+      from: number,
+      to: number,
+    ) => {
+      const centre = (t: number) => toObb(local, poseAt(t)).center;
+      return centre(to)
+        .sub(centre(from))
+        .divideScalar(to - from)
+        .setY(0);
+    };
+    const hovering = flatVelocity(
+      spinRelease(early, 0.3).hoverAt,
+      early - dt,
+      early,
+    );
+    const falling = flatVelocity(recorded("c"), early, early + 20 * dt);
+    expect(hovering.length()).toBeCloseTo(SPIN_RATE * OFF_CENTRE[0], 3);
+    expect(falling.distanceTo(hovering)).toBeLessThanOrEqual(
+      0.01 * hovering.length(),
+    );
+    within1Percent(spinAfter("c", early));
+  });
+
+  it("takes the short way round when the hover quaternion changes sign", () => {
+    within1Percent(spinAfter("d", early));
   });
 });
