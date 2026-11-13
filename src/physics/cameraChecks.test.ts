@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { staticBody, type Body, type Scene } from "../world/body";
 import type { Shot } from "../world/camera";
 import { box, IDENTITY_POSE, type Vec3 } from "../world/geometry";
-import { CAMERA_CLEARANCE, cameraClearance } from "./cameraChecks";
+import { CAMERA_CLEARANCE, cameraClearance, NEAR_PLANE } from "./cameraChecks";
 
 const cube = (id: string, center: Vec3) =>
   staticBody(id, [box(`${id}box`, center, [0.2, 0.2, 0.2])], IDENTITY_POSE);
@@ -14,6 +14,7 @@ const flight = (
   from: number,
   to: number,
   bodies: readonly Body[] = [wall],
+  fov = 40,
 ): Scene => ({
   id: "s",
   duration,
@@ -26,7 +27,7 @@ const flight = (
       at: (t) => ({
         position: [from + ((to - from) * t) / duration, 0, 0],
         target: [0, 0, 0],
-        fov: 40,
+        fov,
         roll: 0,
       }),
     } satisfies Shot,
@@ -53,6 +54,15 @@ describe("cameraClearance", () => {
     const hits = cameraClearance(flight(duration, -1, -0.1 - CAMERA_CLEARANCE / 2), { hz: 100 });
     expect(hits.length).toBeGreaterThan(0);
     expect(hits[hits.length - 1]?.t).toBe(duration);
+  });
+
+  it("reports a near plane that reaches outside the clearance sphere", () => {
+    const hz = 10;
+    const hits = cameraClearance(flight(1, -3, -3, [wall], 179), { hz });
+    expect(hits.map((hit) => hit.against)).toEqual(
+      Array.from({ length: hz + 1 }, () => NEAR_PLANE),
+    );
+    expect(Math.min(...hits.map((hit) => hit.depth))).toBeGreaterThan(1);
   });
 
   it("finds a box that sits far from its body's origin", () => {

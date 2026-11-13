@@ -1,4 +1,4 @@
-import { bitsOf, hex2, type Bit } from "./bytes";
+import { bitsOf, byteOfBits, hex2, type Bit } from "./bytes";
 import { box, type LocalBox } from "./geometry";
 import {
   PIN_PROTRUSION,
@@ -10,6 +10,7 @@ import {
 } from "./units";
 
 const PIN_FOOT = TILE_HEIGHT * 0.25;
+const PIN_PREFIX = "pin-r";
 const PIN_HEAD = TILE_HEIGHT + PIN_PROTRUSION;
 
 export const rowZ = (row: number) => (row - 3.5) * PIN_ROW_PITCH;
@@ -20,7 +21,7 @@ export const tileBoxes = (byte: number): readonly LocalBox[] => [
   box("tile", [0, TILE_HEIGHT / 2, 0], [TILE_SIZE, TILE_HEIGHT, TILE_SIZE]),
   ...bitsOf(byte).map((bit, row) =>
     box(
-      `pin-r${row}`,
+      `${PIN_PREFIX}${row}`,
       [slotX(bit), (PIN_FOOT + PIN_HEAD) / 2, rowZ(row)],
       [PIN_SIZE, PIN_HEAD - PIN_FOOT, PIN_SIZE],
     ),
@@ -34,5 +35,11 @@ export const pinBit = (pin: LocalBox): Bit => {
   }
   return x === slotX(1) ? 1 : 0;
 };
+
+export const isPin = (box: LocalBox): boolean =>
+  box.name.startsWith(PIN_PREFIX);
+
+export const byteOfPins = (boxes: readonly LocalBox[]): number =>
+  byteOfBits(boxes.filter(isPin).map(pinBit));
 
 export const glyphOf = (byte: number): string => hex2(byte);

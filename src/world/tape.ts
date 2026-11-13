@@ -51,6 +51,7 @@ export const addressOf = (tape: Tape, index: number): bigint => {
 };
 
 export const TILE_ID_PREFIX = "tile-";
+export const RAIL_ID = "rail";
 
 export const tileId = (tape: Tape, index: number): string =>
   `${TILE_ID_PREFIX}${addressOf(tape, index).toString(16).toUpperCase()}`;

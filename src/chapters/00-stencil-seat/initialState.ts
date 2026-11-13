@@ -1,9 +1,14 @@
-import { staticBody, type Body, type Material } from "../../world/body";
+import {
+  FLOOR_ID,
+  staticBody,
+  type Body,
+  type Material,
+} from "../../world/body";
 import { parsePattern } from "../../world/bytes";
 import { box, IDENTITY_POSE, type Pose, type Vec3 } from "../../world/geometry";
 import { DEMO_TAPE, SCAN_PATTERN } from "../../world/listing";
 import { tileBoxes } from "../../world/pins";
-import { tapeOf, tileId, tilePose } from "../../world/tape";
+import { RAIL_ID, tapeOf, tileId, tilePose } from "../../world/tape";
 import { releasedPose, type BakeTrack } from "../../world/track";
 import { stencilBoxes } from "../../world/stencil";
 import { TILE_PITCH, TILE_SIZE } from "../../world/units";
@@ -35,12 +40,12 @@ export const fixedBodies = (): readonly Body[] => [
     staticBody(tileId(TAPE, index), tileBoxes(byte), tilePose(TAPE, index)),
   ),
   slab(
-    "rail",
+    RAIL_ID,
     [-TILE_SIZE / 2, -RAIL_DEPTH, -RAIL_HALF_WIDTH],
     [TAPE.bytes.length * TILE_PITCH, 0, RAIL_HALF_WIDTH],
   ),
   slab(
-    "floor",
+    FLOOR_ID,
     [-FLOOR_HALF_SPAN, -RAIL_DEPTH - FLOOR_DEPTH, -FLOOR_HALF_SPAN],
     [FLOOR_HALF_SPAN, -RAIL_DEPTH, FLOOR_HALF_SPAN],
   ),

@@ -1,18 +1,26 @@
 import { describe, expect, test } from "vitest";
 import { contacts } from "../physics/collision";
-import { BYTE_VALUES, byteOfBits, hex2 } from "./bytes";
+import { BYTE_VALUES, hex2 } from "./bytes";
 import { toObb } from "./geometry";
 import { DEMO_TAPE } from "./listing";
-import { glyphOf, pinBit, tileBoxes } from "./pins";
+import { byteOfPins, glyphOf, tileBoxes } from "./pins";
 import { tapeOf, tilePose } from "./tape";
+import { PIN_ROW_PITCH } from "./units";
 
 describe("pins", () => {
   test("[ACC-05] pins encode exactly the tile's byte", () => {
     expect(
       BYTE_VALUES.filter(
         (b) =>
-          byteOfBits(tileBoxes(b).slice(1).map(pinBit)) !== b ||
+          byteOfPins(tileBoxes(b)) !== b ||
           glyphOf(b) !== hex2(b),
+      ),
+    ).toEqual([]);
+    expect(
+      BYTE_VALUES.filter((b) =>
+        tileBoxes(b)
+          .slice(1)
+          .some((pin, r) => pin.center[2] !== (r - 3.5) * PIN_ROW_PITCH),
       ),
     ).toEqual([]);
   });

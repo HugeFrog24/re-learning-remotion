@@ -35,8 +35,6 @@ export const bloomExtentFraction = (
   pixelRatio: number,
 ): number => 2 ** levels / (BASE_HEIGHT * pixelRatio);
 
-export const PIXEL_PARAMS_1080: Readonly<Record<string, number>> = {
-  bloomRadius: 24,
+export const PIXEL_PARAMS_1080 = {
   reflectorBlur: 6,
-  edgeGlowWidth: 3,
-};
+} as const satisfies Readonly<Record<string, number>>;

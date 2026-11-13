@@ -1,23 +1,10 @@
 import { Object3D, PerspectiveCamera, Vector3 } from "three";
 import { sampleTimes } from "../physics/sweep";
 import type { Body, Scene } from "../world/body";
-import { cameraAt, type CameraSetup } from "../world/camera";
+import { cameraAt } from "../world/camera";
 import { TILE_ID_PREFIX } from "../world/tape";
+import { cameraFor, UNIT_CORNERS } from "./lens";
 import { BASE_HEIGHT, BASE_WIDTH } from "./resolution";
-
-const cameraFor = ({ position, target, fov, roll }: CameraSetup) => {
-  const camera = new PerspectiveCamera(
-    fov,
-    BASE_WIDTH / BASE_HEIGHT,
-    0.001,
-    1000,
-  );
-  camera.position.set(...position);
-  camera.lookAt(new Vector3(...target));
-  camera.rotateZ(roll);
-  camera.updateMatrixWorld(true);
-  return camera;
-};
 
 const frontFace = (body: Body, t: number): Vector3[] => {
   const slab = body.localBoxes.find((local) => local.name === "tile");
@@ -29,12 +16,7 @@ const frontFace = (body: Body, t: number): Vector3[] => {
   holder.updateMatrixWorld(true);
   const [cx, cy, cz] = slab.center;
   const [w, h, d] = slab.size;
-  return [
-    [-1, -1],
-    [1, -1],
-    [1, 1],
-    [-1, 1],
-  ].map(([sx, sy]) =>
+  return UNIT_CORNERS.map(([sx, sy]) =>
     new Vector3(cx + (sx * w) / 2, cy + (sy * h) / 2, cz + d / 2).applyMatrix4(
       holder.matrixWorld,
     ),

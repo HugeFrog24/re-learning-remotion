@@ -1,6 +1,7 @@
 import type { CameraSetup, Shot } from "../../world/camera";
 import { BASE_HEIGHT, BASE_WIDTH } from "../../render/resolution";
 import { seatedBottom } from "../../world/fit";
+import { poseOver } from "../../world/tape";
 import { TILE_PITCH } from "../../world/units";
 import {
   eased,
@@ -24,7 +25,7 @@ const STENCIL_WIDTH = SCAN.length * TILE_PITCH;
 const LOOK_Y = seatedBottom(TAPE) + HOVER_LIFT;
 
 const centreOver = (index: number) =>
-  TAPE.origin[0] + (index + (SCAN.length - 1) / 2) * TILE_PITCH;
+  poseOver(TAPE, index + (SCAN.length - 1) / 2, LOOK_Y).position[0];
 
 const framing = (x: number, width: number): CameraSetup => {
   const distance = width / FILL / (2 * HALF_WIDTH_SLOPE);

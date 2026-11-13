@@ -1,21 +1,8 @@
-import { AbsoluteFill, Sequence, useVideoConfig } from "remotion";
-import { ClockTest } from "./scenes/ClockTest";
+import {
+  StencilSeat,
+  STENCIL_SEAT_SECONDS,
+} from "./chapters/00-stencil-seat/StencilSeat";
 
-export const MAIN_SECONDS = 6;
+export const MAIN_SECONDS = STENCIL_SEAT_SECONDS;
 
-export const Main: React.FC = () => {
-  const { fps } = useVideoConfig();
-
-  return (
-    <AbsoluteFill style={{ backgroundColor: "#05060a" }}>
-      <Sequence
-        name="Clock test"
-        from={0 * fps}
-        durationInFrames={6 * fps}
-        premountFor={1 * fps}
-      >
-        <ClockTest />
-      </Sequence>
-    </AbsoluteFill>
-  );
-};
+export const Main: React.FC = () => <StencilSeat />;

@@ -3,7 +3,8 @@ import { BYTE_VALUES, hex2, parsePattern } from "./bytes";
 import { fitsAt, restBottom, seatedBottom, seatsOf } from "./fit";
 import { DEMO_TAPE, FUNCTION_START, SCAN_MATCH, SCAN_PATTERN } from "./listing";
 import { matchOffsets } from "./scan";
-import { stencilBoxes } from "./stencil";
+import { isStencil, plateCell, stencilBoxes, stencilOf } from "./stencil";
+import { tileBoxes } from "./pins";
 import { addressOf, indexOf, tapeOf, type Tape } from "./tape";
 import { PIN_PROTRUSION, TILE_PITCH } from "./units";
 
@@ -70,6 +71,19 @@ describe("stencil", () => {
       ...extents.slice(1).map((extent, i) => extent[0] - extents[i][1]),
     ];
     expect(ends.filter((gap) => Math.abs(gap) >= 1e-12)).toEqual([]);
+  });
+
+  test("the boxes read back as the stencil they were cut from", () => {
+    const scan = parsePattern(SCAN_PATTERN);
+    expect(stencilOf(stencilBoxes(scan))).toEqual(scan);
+    expect(
+      BYTE_VALUES.filter((b) => stencilOf(stencilBoxes([null, b]))[1] !== b),
+    ).toEqual([]);
+    expect(isStencil(stencilBoxes(scan))).toBe(true);
+    expect(isStencil(tileBoxes(0))).toBe(false);
+    expect(stencilBoxes(scan).map(plateCell).filter((c) => c !== null)).toEqual(
+      scan.flatMap((byte, cell) => (byte === null ? [] : [cell])),
+    );
   });
 
   test("fitsAt rejects a stencil that overhangs the tape", () => {

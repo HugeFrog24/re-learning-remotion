@@ -24,6 +24,8 @@ export type Body = {
   };
 };
 
+export const FLOOR_ID = "floor";
+
 export type Scene = {
   readonly id: string;
   readonly duration: number;
