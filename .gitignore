@@ -1,0 +1,13 @@
+node_modules
+dist
+.DS_Store
+.env
+
+# Ignore the output video from Git but not videos you import into src/.
+out
+
+# Informational reference repos (never published with the project)
+reference
+
+# Brainstorm mockups (visual companion)
+.superpowers/
