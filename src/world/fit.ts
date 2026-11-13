@@ -1,6 +1,7 @@
 import { contacts, deepest, smallestClearing } from "../physics/collision";
 import { toObb, type Pose } from "./geometry";
 import { tileBoxes } from "./pins";
+import { candidateOffsets } from "./scan";
 import { stencilBoxes, type Stencil } from "./stencil";
 import { checkSpan, poseOver, tilePose, tileTop, type Tape } from "./tape";
 import { PIN_PROTRUSION, TOUCH_EPSILON } from "./units";
@@ -28,6 +29,11 @@ const penetrationAt = (tape: Tape, stencil: Stencil, index: number) => {
 
 export const fitsAt = (tape: Tape, stencil: Stencil, index: number): boolean =>
   penetrationAt(tape, stencil, index)(seatedBottom(tape)) === 0;
+
+export const seatsOf = (tape: Tape, stencil: Stencil): number[] =>
+  candidateOffsets(tape.bytes.length, stencil.length).filter((index) =>
+    fitsAt(tape, stencil, index),
+  );
 
 export const restBottom = (
   tape: Tape,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Body, Scene } from "../world/body";
 import { solidsAt } from "../world/body";
-import { at, body } from "../world/fixtures";
+import { at, body, hoverUntil } from "../world/fixtures";
 import { box, IDENTITY_POSE, toObb, type Pose } from "../world/geometry";
 import {
   CHECK_HZ,
@@ -10,6 +10,8 @@ import {
   sampleTimes,
   sweep,
 } from "./sweep";
+
+const anchor = body("a", "static", () => at([0, 0, 0]));
 
 const scene = (duration: number, bodies: Body[]): Scene => ({
   id: "s",
@@ -20,9 +22,8 @@ const scene = (duration: number, bodies: Body[]): Scene => ({
 
 describe("sweep", () => {
   it("finds the first overlap of a box moving through another", () => {
-    const fixed = body("a", "static", () => at([0, 0, 0]));
     const mover = body("m", "kinematic", (t) => at([-0.1 + 0.1 * t, 0, 0]));
-    const found = sweep(scene(2, [fixed, mover]), { hz: CHECK_HZ });
+    const found = sweep(scene(2, [anchor, mover]), { hz: CHECK_HZ });
     expect(found.length).toBeGreaterThan(0);
     expect(found[0].t - 0.8).toBeGreaterThanOrEqual(0);
     expect(found[0].t - 0.8).toBeLessThanOrEqual(1 / CHECK_HZ + 1e-9);
@@ -31,29 +32,34 @@ describe("sweep", () => {
   });
 
   it("accepts boxes touching face to face", () => {
-    const fixed = body("a", "static", () => at([0, 0, 0]));
     const other = body("m", "kinematic", () => at([0.02, 0, 0]));
-    expect(sweep(scene(1, [fixed, other]), { hz: 10 })).toEqual([]);
+    expect(sweep(scene(1, [anchor, other]), { hz: 10 })).toEqual([]);
   });
 
   it("tolerates resting overlap of a simulated body up to the tolerance", () => {
-    const fixed = body("a", "static", () => at([0, 0, 0]));
     const shallow = body("s", "simulated", () => at([0.02 - 0.0004, 0, 0]));
     const deep = body("s", "simulated", () => at([0.02 - 0.0006, 0, 0]));
-    expect(sweep(scene(0, [fixed, shallow]), { hz: 10 })).toEqual([]);
-    expect(sweep(scene(0, [fixed, deep]), { hz: 10 })).toHaveLength(1);
+    expect(sweep(scene(0, [anchor, shallow]), { hz: 10 })).toEqual([]);
+    expect(sweep(scene(0, [anchor, deep]), { hz: 10 })).toHaveLength(1);
   });
 
   it("holds kinematic bodies to the kinematic epsilon", () => {
     expect(KINEMATIC_EPSILON).toBe(1e-7);
     expect(RESTING_TOLERANCE).toBe(0.0005);
-    const fixed = body("a", "static", () => at([0, 0, 0]));
     const kin = body("k", "kinematic", () => at([0.02 - 0.0004, 0, 0]));
-    expect(sweep(scene(0, [fixed, kin]), { hz: 10 })).toHaveLength(1);
+    expect(sweep(scene(0, [anchor, kin]), { hz: 10 })).toHaveLength(1);
+  });
+
+  it("holds a hovering body to the kinematic epsilon until its release", () => {
+    const overlapping = body("h", "kinematic", () => at([0.02 - 0.0004, 0, 0]));
+    const found = sweep(
+      scene(1, [anchor, hoverUntil(overlapping, 0.5)]),
+      { hz: 10 },
+    );
+    expect(found.map((violation) => violation.t)).toEqual([0, 0.1, 0.2, 0.3, 0.4]);
   });
 
   it("skips static pairs and boxes of the same body", () => {
-    const one = body("a", "static", () => at([0, 0, 0]));
     const two = body("c", "static", () => at([0, 0, 0]));
     const compound: Body = {
       ...body("k", "kinematic", () => at([1, 0, 0])),
@@ -62,7 +68,7 @@ describe("sweep", () => {
         box("y", [0, 0, 0], [0.02, 0.02, 0.02]),
       ],
     };
-    expect(sweep(scene(1, [one, two, compound]), { hz: 10 })).toEqual([]);
+    expect(sweep(scene(1, [anchor, two, compound]), { hz: 10 })).toEqual([]);
   });
 
   it("samples the exact end time", () => {

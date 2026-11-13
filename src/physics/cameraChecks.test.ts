@@ -1,24 +1,23 @@
 import { describe, expect, it } from "vitest";
-import type { Body, Scene } from "../world/body";
+import { staticBody, type Body, type Scene } from "../world/body";
 import type { Shot } from "../world/camera";
-import { box, IDENTITY_POSE } from "../world/geometry";
+import { box, IDENTITY_POSE, type Vec3 } from "../world/geometry";
 import { CAMERA_CLEARANCE, cameraClearance } from "./cameraChecks";
 
-const wall: Body = {
-  id: "wall",
-  motion: "static",
-  hovering: false,
-  maxSpeed: 0,
-  maxAccel: 0,
-  impacts: [],
-  localBoxes: [box("wallbox", [0, 0, 0], [0.2, 0.2, 0.2])],
-  poseAt: () => IDENTITY_POSE,
-};
+const cube = (id: string, center: Vec3) =>
+  staticBody(id, [box(`${id}box`, center, [0.2, 0.2, 0.2])], IDENTITY_POSE);
 
-const flight = (duration: number, from: number, to: number): Scene => ({
+const wall = cube("wall", [0, 0, 0]);
+
+const flight = (
+  duration: number,
+  from: number,
+  to: number,
+  bodies: readonly Body[] = [wall],
+): Scene => ({
   id: "s",
   duration,
-  bodies: [wall],
+  bodies,
   shots: [
     {
       name: "fly",
@@ -54,5 +53,14 @@ describe("cameraClearance", () => {
     const hits = cameraClearance(flight(duration, -1, -0.1 - CAMERA_CLEARANCE / 2), { hz: 100 });
     expect(hits.length).toBeGreaterThan(0);
     expect(hits[hits.length - 1]?.t).toBe(duration);
+  });
+
+  it("finds a box that sits far from its body's origin", () => {
+    const hits = cameraClearance(flight(2, 1, 0, [cube("arm", [0.5, 0, 0])]), {
+      hz: 100,
+    });
+    const entry = 0.74;
+    expect(hits[0]?.against).toBe("armbox");
+    expect(Math.abs((hits[0]?.t ?? 0) - entry)).toBeLessThanOrEqual(1 / 100 + 1e-9);
   });
 });

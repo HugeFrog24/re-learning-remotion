@@ -1,4 +1,4 @@
-import type { Body } from "./body";
+import { staticBody, type Body } from "./body";
 import {
   box,
   IDENTITY_POSE,
@@ -19,12 +19,24 @@ export const body = (
   size: Vec3 = [0.02, 0.02, 0.02],
   center: Vec3 = [0, 0, 0],
 ): Body => ({
-  id,
+  ...staticBody(id, [box("b", center, size)], IDENTITY_POSE),
   motion,
-  hovering: false,
   maxSpeed: 1,
   maxAccel: 5,
-  impacts: [],
-  localBoxes: [box("b", center, size)],
   poseAt,
+});
+
+export const hoverUntil = (
+  base: Body,
+  releaseAt: number,
+  hoverAt: (t: number) => Pose = base.poseAt,
+): Body => ({
+  ...base,
+  motion: "simulated",
+  hovering: true,
+  release: {
+    at: releaseAt,
+    material: { density: 1, friction: 1, restitution: 0 },
+    hoverAt,
+  },
 });

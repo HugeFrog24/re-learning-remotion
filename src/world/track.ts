@@ -10,6 +10,7 @@ export type BakeTrack = {
 
 const STRIDE = 7;
 const PRECISION = 1e7;
+export const TRACK_RESOLUTION = 1 / PRECISION;
 const STEP_SNAP = 1e-6;
 
 const quantize = (value: number) =>

@@ -28,12 +28,17 @@ const rebake = async (id: string, scene: Scene) => {
 };
 
 test("[BAKE-01] every bake matches its inputs", async () => {
+  expect(BAKES.map((bake) => bake.id)).toContain("stencil-seat");
   for (const { id, scene } of BAKES) {
-    const built = scene();
+    const built = scene(null);
+    expect(built.id).toBe(id);
     if (process.env.UPDATE_BAKES === "1") await rebake(id, built);
     expect(readManifest()[id]?.inputHash).toBe(inputHash(built));
     expect(existsSync(bakeFile(id))).toBe(true);
   }
+  expect(Object.keys(readManifest())).toEqual(
+    BAKES.map((bake) => bake.id).sort(),
+  );
 });
 
 test("moving the release time changes the hash", () => {

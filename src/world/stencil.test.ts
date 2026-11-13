@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
 import { BYTE_VALUES, hex2, parsePattern } from "./bytes";
-import { fitsAt, restBottom, seatedBottom } from "./fit";
-import { DEMO_TAPE, FUNCTION_START, SCAN_MATCH } from "./listing";
+import { fitsAt, restBottom, seatedBottom, seatsOf } from "./fit";
+import { DEMO_TAPE, FUNCTION_START, SCAN_MATCH, SCAN_PATTERN } from "./listing";
 import { matchOffsets } from "./scan";
-import { stencilBoxes, type Stencil } from "./stencil";
+import { stencilBoxes } from "./stencil";
 import { addressOf, indexOf, tapeOf, type Tape } from "./tape";
 import { PIN_PROTRUSION, TILE_PITCH } from "./units";
 
@@ -12,12 +12,6 @@ const single = (byte: number): Tape => ({
   bytes: [byte],
   origin: [0, 0, 0],
 });
-
-const seats = (tape: Tape, stencil: Stencil) =>
-  Array.from(
-    { length: tape.bytes.length - stencil.length + 1 },
-    (_, i) => i,
-  ).filter((i) => fitsAt(tape, stencil, i));
 
 describe("stencil", () => {
   test("[ACC-06] a cell fits only its own byte (all 256 × 256 pairs)", () => {
@@ -46,11 +40,11 @@ describe("stencil", () => {
   test("[ACC-03] the scan pattern seats exactly once on the demo tape, at the subss; the short stencil seats once, before the function", () => {
     const tape = tapeOf(DEMO_TAPE, [0, 0, 0]);
     expect(tape.base).toBe(0x140012a20n);
-    const scan = parsePattern("F3 0F 5C C1 F3 0F 11 41 ?? E8 ?? ?? ?? ??");
-    const found = seats(tape, scan);
+    const scan = parsePattern(SCAN_PATTERN);
+    const found = seatsOf(tape, scan);
     expect(found).toEqual([indexOf(tape, SCAN_MATCH)]);
     expect(found).toEqual(matchOffsets(tape.bytes, scan));
-    const short = seats(tape, parsePattern("CC 48 83 EC ??"));
+    const short = seatsOf(tape, parsePattern("CC 48 83 EC ??"));
     expect(short).toHaveLength(1);
     expect(addressOf(tape, short[0] + 1)).toBe(FUNCTION_START);
   });

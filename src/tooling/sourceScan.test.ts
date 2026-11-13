@@ -1,4 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
+import { isBuiltin } from "node:module";
+import { posix } from "node:path";
+import ts from "typescript";
 import { expect, test } from "vitest";
 
 const filesIn = (root: string) =>
@@ -6,15 +9,33 @@ const filesIn = (root: string) =>
     `${root}/${file}`.split("\\").join("/"),
   );
 
+const isTest = (file: string) => /\.test\.tsx?$/.test(file);
+
 const sources = () =>
   filesIn("src")
     .filter((file) => /\.tsx?$/.test(file))
-    .filter(
-      (file) => !file.endsWith(".test.ts") && !file.startsWith("src/tooling/"),
-    );
+    .filter((file) => !isTest(file) && !file.startsWith("src/tooling/"));
 
 const offending = (pattern: RegExp, files: readonly string[]) =>
   files.filter((file) => pattern.test(readFileSync(file, "utf8")));
+
+const NODE_ONLY_MODULES = ["src/bake/simulate", "src/bake/inputs"];
+
+const nodeOnly = (file: string, specifier: string) =>
+  isBuiltin(specifier) ||
+  specifier.startsWith("@dimforge/") ||
+  (specifier.startsWith(".") &&
+    NODE_ONLY_MODULES.includes(
+      posix
+        .join(posix.dirname(file), specifier)
+        .replace(/\.[cm]?[jt]sx?$/, ""),
+    ));
+
+const nodeImports = (file: string, text: string) =>
+  ts
+    .preProcessFile(text, true, true)
+    .importedFiles.map((reference) => reference.fileName)
+    .filter((specifier) => nodeOnly(file, specifier));
 
 test("[TIME-02] no unseeded randomness or wall-clock reads", () => {
   expect(
@@ -22,11 +43,45 @@ test("[TIME-02] no unseeded randomness or wall-clock reads", () => {
   ).toEqual([]);
 });
 
-test("only bake code loads Rapier, Node built-ins or the Node-only bake modules", () => {
-  const outsideBake = sources().filter((file) => !file.startsWith("src/bake/"));
+test("only the bake modules and tests load Rapier, Node built-ins or the Node-only bake modules", () => {
+  const guarded = filesIn("src").filter(
+    (file) =>
+      /\.tsx?$/.test(file) &&
+      !isTest(file) &&
+      !NODE_ONLY_MODULES.some((module) => file === `${module}.ts`),
+  );
+  expect(guarded).toContain("src/bake/registry.ts");
   expect(
-    offending(/from "(node:|@dimforge\/|[./]*\/bake\/(simulate|inputs)")/, outsideBake),
+    guarded.flatMap((file) =>
+      nodeImports(file, readFileSync(file, "utf8")).map(
+        (specifier) => `${file} -> ${specifier}`,
+      ),
+    ),
   ).toEqual([]);
+});
+
+test("the import guard sees every way of naming a Node-only module", () => {
+  const sample = [
+    'import { readFileSync } from "fs";',
+    "import { createHash } from 'crypto';",
+    'import "path";',
+    'import { simulate } from "../bake/simulate.ts";',
+    'export { SIM_HZ } from "./inputs";',
+    'const rapier = await import("@dimforge/rapier3d-deterministic-compat");',
+    "const files = import('node:fs/promises');",
+    'import { Vector3 } from "three";',
+    'import { BAKES } from "./registry";',
+    'const quoted = "from \\"fs\\"";',
+  ].join("\n");
+  expect(nodeImports("src/bake/registry.ts", sample)).toEqual([
+    "fs",
+    "crypto",
+    "path",
+    "../bake/simulate.ts",
+    "./inputs",
+    "@dimforge/rapier3d-deterministic-compat",
+    "node:fs/promises",
+  ]);
 });
 
 test("[REF-01] reference hooking libraries are never named", () => {

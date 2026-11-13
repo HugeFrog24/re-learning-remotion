@@ -6,6 +6,7 @@ export type ListingLine = {
 
 export const FUNCTION_START = 0x140012a30n;
 export const SCAN_MATCH = 0x140012a39n;
+export const SCAN_PATTERN = "F3 0F 5C C1 F3 0F 11 41 ?? E8 ?? ?? ?? ??";
 
 const line = (
   address: bigint,

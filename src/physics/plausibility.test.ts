@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Body } from "../world/body";
-import { at, body } from "../world/fixtures";
+import { at, body, hoverUntil } from "../world/fixtures";
 import { IDENTITY_POSE } from "../world/geometry";
 import { roughMotion, teleports } from "./plausibility";
 
@@ -47,15 +47,7 @@ describe("roughMotion", () => {
   });
 
   it("checks a simulated body only until release", () => {
-    const released = along(stopping, {
-      motion: "simulated",
-      hovering: true,
-      release: {
-        at: 0.3,
-        material: { density: 1, friction: 1, restitution: 0 },
-        hoverAt: () => IDENTITY_POSE,
-      },
-    });
+    const released = hoverUntil(along(stopping), 0.3, () => IDENTITY_POSE);
     expect(roughMotion(released, { hz: 960, from: 0, to: 1 })).toEqual([]);
   });
 

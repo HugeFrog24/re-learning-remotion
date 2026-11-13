@@ -1,6 +1,6 @@
 import { TOUCH_EPSILON } from "../world/units";
 import { toObb } from "../world/geometry";
-import type { Body, Scene } from "../world/body";
+import { reachOf, type Body, type Scene } from "../world/body";
 import { collide, type Obb } from "./collision";
 
 export const CHECK_HZ = 960;
@@ -24,15 +24,6 @@ export const sampleTimes = (hz: number, from: number, to: number): number[] => {
   return times;
 };
 
-const bodyReach = (body: Body) =>
-  Math.max(
-    0,
-    ...body.localBoxes.map(
-      (b) =>
-        Math.hypot(...b.center) + Math.hypot(b.size[0], b.size[1], b.size[2]) / 2,
-    ),
-  );
-
 type Placed = {
   readonly body: Body;
   readonly reach: number;
@@ -46,7 +37,7 @@ type Placed = {
 const place = (body: Body): Placed => {
   const placed: Placed = {
     body,
-    reach: bodyReach(body),
+    reach: reachOf(body),
     cache: { key: "", boxes: [] },
     x: 0,
     y: 0,
@@ -71,10 +62,11 @@ const moveTo = (placed: Placed, t: number) => {
   };
 };
 
-const limitFor = (a: Body, b: Body) =>
-  a.motion === "simulated" || b.motion === "simulated"
-    ? RESTING_TOLERANCE
-    : KINEMATIC_EPSILON;
+const settling = (body: Body, t: number) =>
+  body.motion === "simulated" && t >= (body.release?.at ?? -Infinity);
+
+export const contactLimit = (a: Body, b: Body, t: number) =>
+  settling(a, t) || settling(b, t) ? RESTING_TOLERANCE : KINEMATIC_EPSILON;
 
 const near = (a: Placed, b: Placed) => {
   const reach = a.reach + b.reach;
@@ -90,7 +82,7 @@ const pairViolations = (
   b: Placed,
   into: Violation[],
 ) => {
-  const limit = limitFor(a.body, b.body);
+  const limit = contactLimit(a.body, b.body, t);
   const boxesB = b.boxes();
   for (const boxA of a.boxes()) {
     for (const boxB of boxesB) {
