@@ -2,6 +2,7 @@ import { Vector3 } from "three";
 import { cameraAt } from "../world/camera";
 import { solidsAt, type Scene } from "../world/body";
 import { contacts, sphere } from "./collision";
+import { sampleTimes } from "./sweep";
 
 export const CAMERA_CLEARANCE = 0.03;
 export const CAMERA_MAX_SPEED = 0.5;
@@ -12,9 +13,7 @@ export const cameraClearance = (
   opts: { hz: number },
 ): { t: number; against: string; depth: number }[] => {
   const found: { t: number; against: string; depth: number }[] = [];
-  const steps = Math.floor(scene.duration * opts.hz);
-  for (let i = 0; i <= steps; i++) {
-    const t = i / opts.hz;
+  for (const t of sampleTimes(opts.hz, 0, scene.duration)) {
     const [x, y, z] = cameraAt(scene.shots, t).position;
     const lens = sphere("camera", new Vector3(x, y, z), CAMERA_CLEARANCE);
     const solids = scene.bodies.flatMap((body) => solidsAt(body, t));
