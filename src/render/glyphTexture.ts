@@ -6,8 +6,11 @@ import { GLYPH } from "./look";
 
 const WEIGHT = "700";
 const CAP_HEIGHT_PER_EM = 0.73;
+const ADVANCE_PER_EM = 0.6;
+const GLYPH_CHARACTERS = 2;
 
 export const GLYPH_TEXT_HEIGHT = GLYPH.em * CAP_HEIGHT_PER_EM;
+export const GLYPH_TEXT_WIDTH = GLYPH.em * ADVANCE_PER_EM * GLYPH_CHARACTERS;
 
 export type FacePaint = {
   readonly width: number;

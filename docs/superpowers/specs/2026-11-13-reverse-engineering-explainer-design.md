@@ -357,10 +357,10 @@ docs/CONTINUITY.md, AGENTS.md, CLAUDE.md
 | SND-01 | A sound starts on the frame its motion first shows, or up to one frame later, never earlier. This is measured from the audible onset, after the file's lead-in silence (the stock `ding` has about 100 ms). |
 | TXT-01 | On-screen text stays inside the safe area and meets the minimum sizes. |
 | REF-01 | No file under `src/`, `public/` or `docs/` names Dobby or shadowhook or embeds their code, except this spec and the plan. |
-| RES-01 | The 3D canvas renders at the render's pixel ratio for every ratio from 1 to 4. 4K and 8K draw real pixels, not an enlargement. |
+| RES-01 | The 3D canvas renders at the render's pixel ratio for every ratio from 1 to 4. 4K and 8K draw real pixels, not an enlargement; RES-04 checks this on rendered stills. |
 | RES-02 | Every pixel-measured effect parameter is defined in 1080p pixels and scales with the pixel ratio. Its extent, as a fraction of the frame, is identical at ratios 1, 2 and 4. |
 | RES-03 | At every scale (ratio 1, 2 and 4) and in every shot, the glyph textures keep at least one texel per output pixel at the closest framing of any tile face, and no texture exceeds the GPU's maximum texture size. |
-| RES-04 | A still rendered at `--scale=2` or `--scale=4`, box-downsampled to 1080×1920, matches the `--scale=1` still: mean absolute difference ≤ 2/255 per channel, and no 64×64 block above 8/255 (builder to confirm). It runs with `npm run test:render`. |
+| RES-04 | A still rendered at `--scale=2` or `--scale=4`, box-downsampled to 1080×1920, matches the `--scale=1` still: mean absolute difference ≤ 2/255 per channel, and no 64×64 block above 8/255 (builder to confirm). Inside the tile glyphs, projected with the render's camera, the same stills draw real detail, not an enlargement: their energy finer than the 1080p pixel grid (squared steps between neighbouring pixels within each 2×2 or 4×4 block) is at least 1.5× (4K) and 3.5× (8K) that of the `--scale=1` still enlarged bilinearly (builder to confirm). It runs with `npm run test:render`. |
 | DOC-01 | The meta-test linking CONTINUITY IDs to tests. |
 
 - Not testable, so untagged: no black outlines, and the neon look.
