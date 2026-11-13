@@ -15,11 +15,12 @@ import { useCurrentFrame, useDelayRender, useVideoConfig } from "remotion";
 import { useRenderPixels } from "../lib/Stage";
 import { BLOOM } from "./look";
 import { pinFineMipSteps } from "./mipmapRadius";
-import { BLOOM_RADIUS, bloomLevels, textureTier } from "./resolution";
+import { bloomConfig } from "./resolution";
 
 export const Glow: React.FC<{ readonly ready: boolean }> = ({ ready }) => {
   const advance = useThree((state) => state.advance);
   const { ratio } = useRenderPixels();
+  const { levels, radius, fineSteps } = bloomConfig(ratio);
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { delayRender, continueRender } = useDelayRender();
@@ -34,14 +35,9 @@ export const Glow: React.FC<{ readonly ready: boolean }> = ({ ready }) => {
 
   const pinFineLevels = useCallback(
     (effect: BloomEffect | null) => {
-      if (effect)
-        pinFineMipSteps(
-          effect.mipmapBlurPass,
-          Math.log2(textureTier(ratio)),
-          BLOOM_RADIUS,
-        );
+      if (effect) pinFineMipSteps(effect.mipmapBlurPass, fineSteps, radius);
     },
-    [ratio],
+    [fineSteps, radius],
   );
 
   useLayoutEffect(() => {
@@ -62,8 +58,8 @@ export const Glow: React.FC<{ readonly ready: boolean }> = ({ ready }) => {
         mipmapBlur
         luminanceThreshold={BLOOM.threshold}
         intensity={BLOOM.intensity}
-        radius={BLOOM_RADIUS}
-        levels={bloomLevels(ratio)}
+        radius={radius}
+        levels={levels}
       />
     </EffectComposer>
   );

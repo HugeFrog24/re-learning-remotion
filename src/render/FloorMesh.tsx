@@ -5,13 +5,7 @@ import { useRenderPixels } from "../lib/Stage";
 import type { LocalBox } from "../world/geometry";
 import { BoxesMesh, type BodyLook } from "./BoxesMesh";
 import { FLOOR, MIRROR } from "./look";
-import {
-  BASE_HEIGHT,
-  BASE_WIDTH,
-  capToGpu,
-  inRenderPixels,
-  PIXEL_PARAMS_1080,
-} from "./resolution";
+import { mirrorTarget } from "./resolution";
 
 const BLUR_TAPS = 16;
 
@@ -71,13 +65,12 @@ const GLOSSY_MIRROR = {
 
 const glossyMirror = (
   [width, depth]: readonly [number, number],
-  [texelsWide, texelsHigh]: readonly [number, number],
-  blur: number,
+  target: ReturnType<typeof mirrorTarget>,
 ): Reflector => {
   const mirror = new Reflector(new PlaneGeometry(width, depth), {
     color: MIRROR.tint,
-    textureWidth: texelsWide,
-    textureHeight: texelsHigh,
+    textureWidth: target.width,
+    textureHeight: target.height,
     multisample: MIRROR.samples,
     shader: GLOSSY_MIRROR,
   });
@@ -87,8 +80,8 @@ const glossyMirror = (
   material.polygonOffset = true;
   material.polygonOffsetFactor = -1;
   material.polygonOffsetUnits = -1;
-  material.uniforms.texel.value.set(1 / texelsWide, 1 / texelsHigh);
-  material.uniforms.blur.value = blur;
+  material.uniforms.texel.value.set(1 / target.width, 1 / target.height);
+  material.uniforms.blur.value = target.blurTexels;
   material.uniforms.f0.value = MIRROR.f0;
   return mirror;
 };
@@ -97,12 +90,9 @@ const Mirror: React.FC<{ readonly box: LocalBox }> = ({ box }) => {
   const { ratio, maxTextureSize } = useRenderPixels();
   const [sx, sy, sz] = box.size;
   const [cx, cy, cz] = box.center;
-  const texelsWide = capToGpu(BASE_WIDTH * ratio, maxTextureSize);
-  const texelsHigh = capToGpu(BASE_HEIGHT * ratio, maxTextureSize);
-  const blur = inRenderPixels(PIXEL_PARAMS_1080.reflectorBlur, ratio);
   const mirror = useMemo(
-    () => glossyMirror([sx, sz], [texelsWide, texelsHigh], blur),
-    [sx, sz, texelsWide, texelsHigh, blur],
+    () => glossyMirror([sx, sz], mirrorTarget(ratio, maxTextureSize)),
+    [sx, sz, ratio, maxTextureSize],
   );
 
   useEffect(

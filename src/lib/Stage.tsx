@@ -5,7 +5,7 @@ import { AbsoluteFill, useVideoConfig } from "remotion";
 import { PerspectiveCamera } from "three";
 import { placeCamera } from "../render/lens";
 import { BACKGROUND } from "../render/look";
-import { CANVAS_DPR } from "../render/resolution";
+import { canvasDpr } from "../render/resolution";
 import type { CameraSetup } from "../world/camera";
 
 export const Stage: React.FC<{
@@ -18,7 +18,7 @@ export const Stage: React.FC<{
       <ThreeCanvas
         width={width}
         height={height}
-        dpr={[...CANVAS_DPR]}
+        dpr={canvasDpr()}
         shadows="percentage"
         gl={{ antialias: true }}
       >
