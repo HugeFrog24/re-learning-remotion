@@ -13,8 +13,8 @@ Rules tagged `(test)` are enforced by `npm test`. A `(planned)` rule becomes `(t
 - **TIME-01** (planned) The world state at time t is identical at every fps (30, 60, 24 and 50 are tested).
 - **TIME-02** (test) No unseeded randomness or wall-clock reads in world, bake or render code.
 - **BAKE-01** (planned) Every bake matches its inputs (hash in the manifest).
-- **ACC-01** (planned) Every byte string shown decodes, with iced-x86 in 64-bit mode, to exactly the mnemonic shown with it.
-- **ACC-02** (planned) Every address shown is consistent with the instruction lengths and with the module-base model (preferred base in disassembler views, game.exe+RVA at runtime).
+- **ACC-01** (test) Every byte string shown decodes, with iced-x86 in 64-bit mode, to exactly the mnemonic shown with it.
+- **ACC-02** (test) Every address shown is consistent with the instruction lengths and with the module-base model (preferred base in disassembler views, game.exe+RVA at runtime).
 - **ACC-03** (planned) Each pattern seats exactly once in the tape shown with it, and the backward scan stops at the function start.
 - **ACC-04** (planned) Pseudocode and stripped names agree with §5 (call target, offset, argument types).
 - **ACC-05** (planned) At every moment, each tile's pins equal its byte, and its glyph shows the pins.
