@@ -77,6 +77,12 @@ It is an ethical, educational piece that explains concepts. It is **not** a tuto
   - Headlines are at least 84 px; important supporting text at least 44 px.
   - The bottom band stays free for future captions. **(my call)**
 - **Headless Three.js renders use `--gl=angle`** (already set in `remotion.config.ts`).
+- **Resolution independence (owner, 2026-11-13, as in the owner's previous film).** The film is authored once, at 1080×1920.
+  - 4K (2160×3840) and 8K (4320×7680) are the same compositions rendered with Remotion's output scaling, `--scale=2` and `--scale=4` (or Studio's render scale). Nothing is authored in output pixels.
+  - The 3D canvas renders at the render's own pixel density, up to `FINEST_PIXEL_RATIO = 4`. R3F's default device-pixel-ratio range of [1, 2] would cap at 4K and enlarge the picture at 8K.
+  - Anything measured in pixels (bloom spread, reflection blur, glow and line widths) is defined in 1080p pixels and multiplied by the render's pixel ratio. The picture therefore looks the same at every scale, only finer.
+  - Textures read up close (the hex glyphs) are painted at a base density at 1080p, twice that at 4K and four times at 8K, so type stays crisp.
+  - No buffer may exceed the GPU's largest texture size.
 - **The process is iterative:** prototype, owner comments, refine. **(owner)**
 
 ## 4. Approaches considered (how motion is produced)
@@ -193,7 +199,11 @@ The **ruler** (§6) makes both literal.
 
 ### Bits as pins (owner)
 
-- Inside each smoked-glass tile, the byte's **8 bits are visible as pins**. The lit hex glyph on top is light, and it always shows the value of the pins.
+- Inside each smoked-glass tile, the byte's **8 bits are visible as pins**. The lit hex glyph is light, and it always shows the value of the pins.
+  - It sits on the tile's **front face**, facing the camera (owner, at the look checkpoint). The pins protrude through the top for keying, and a glyph on top was hidden by them.
+- **Look (owner, picked from the look spike): "hybrid".**
+  - Emissive neon tile edges with a light bloom, plus a real neon tube under the rail and the CPU sled's shadow-casting light.
+  - Fixes on top: brighter smoked glass so the pins read, a truly reflective floor (deterministic, re-rendered per frame), and a monospace glyph font loaded before its textures are drawn.
 - Every write flips pins with real motion. That covers energy draining, constructor writes, the patch, the trampoline copy and the detour's code. No exceptions are needed.
 - **Keying requirement:** a wrong bit must block the stencil in either direction. A single up/down pin only blocks a 1 where a 0 was expected, so each bit needs, for example, a pin that sits in one of two positions. The builder designs the exact geometry. **(my call)**
 
@@ -346,6 +356,10 @@ docs/CONTINUITY.md, AGENTS.md, CLAUDE.md
 | SND-01 | A sound starts on the frame its motion first shows, or up to one frame later, never earlier. This is measured from the audible onset, after the file's lead-in silence (the stock `ding` has about 100 ms). |
 | TXT-01 | On-screen text stays inside the safe area and meets the minimum sizes. |
 | REF-01 | No file under `src/`, `public/` or `docs/` names Dobby or shadowhook or embeds their code, except this spec and the plan. |
+| RES-01 | The 3D canvas renders at the render's pixel ratio for every ratio from 1 to 4. 4K and 8K draw real pixels, not an enlargement. |
+| RES-02 | Every pixel-measured effect parameter is defined in 1080p pixels and scales with the pixel ratio. Its extent, as a fraction of the frame, is identical at ratios 1, 2 and 4. |
+| RES-03 | At every scale (ratio 1, 2 and 4) and in every shot, the glyph textures keep at least one texel per output pixel at the closest framing of any tile face, and no texture exceeds the GPU's maximum texture size. |
+| RES-04 | A still rendered at `--scale=2` or `--scale=4`, box-downsampled to 1080×1920, matches the `--scale=1` still: mean absolute difference ≤ 2/255 per channel, and no 64×64 block above 8/255 (builder to confirm). It runs with `npm run test:render`. |
 | DOC-01 | The meta-test linking CONTINUITY IDs to tests. |
 
 - Not testable, so untagged: no black outlines, and the neon look.
@@ -368,6 +382,7 @@ Iterative, in this order. Each step ends with a prototype the owner reviews befo
    - the world model with pins, the independent checker and the bake pipeline
    - CONTINUITY.md, AGENTS.md and CLAUDE.md, with the meta-test
    - one real physics moment end to end: the hovering stencil testing offsets and seating (ACC-03 and ACC-06 included)
+   - resolution independence with pixel tests (RES-01 to RES-04), so later 4K and 8K renders need nothing but `--scale` **(owner)**
 3. **Chapters one by one**, each as stills or a short clip, then owner comments, then refinement. The hook (7) and the stencils (8) carry the most physics risk and should come early.
 4. **SFX pass** after picture lock, applying SND-01.
 5. **Voice** later, with holds retiming chapters within the 3:00 ceiling.

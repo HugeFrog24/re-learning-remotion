@@ -23,4 +23,8 @@ Rules tagged `(test)` are enforced by `npm test`. A `(planned)` rule becomes `(t
 - **SND-01** (planned) A sound starts on the frame its motion first shows, or up to one frame later, never earlier. This is measured from the audible onset, after the file's lead-in silence (the stock ding has about 100 ms).
 - **TXT-01** (planned) On-screen text stays inside the safe area and meets the minimum sizes.
 - **REF-01** (test) No file under src/, public/ or docs/ (specs and plans excepted) names a reference hooking library listed in AGENTS.md.
+- **RES-01** (planned) The 3D canvas renders at the render's pixel ratio for every ratio from 1 to 4. 4K (`--scale=2`) and 8K (`--scale=4`) draw real pixels, not an enlargement.
+- **RES-02** (planned) Every pixel-measured effect parameter is defined in 1080p pixels and scales with the pixel ratio. Its extent, as a fraction of the frame, is identical at ratios 1, 2 and 4.
+- **RES-03** (planned) At every scale (ratio 1, 2 and 4) and in every shot, the glyph textures keep at least one texel per output pixel at the closest framing of any tile face, and no texture exceeds the GPU's maximum texture size.
+- **RES-04** (planned) A still rendered at --scale=2 or --scale=4, box-downsampled to 1080×1920, matches the --scale=1 still: mean absolute difference ≤ 2/255 per channel, and no 64×64 block above 8/255. It runs with `npm run test:render`, not `npm test`.
 - **DOC-01** (test) The meta-test linking CONTINUITY IDs to tests.

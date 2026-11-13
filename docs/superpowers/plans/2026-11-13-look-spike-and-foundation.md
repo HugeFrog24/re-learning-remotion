@@ -37,8 +37,13 @@ It ends with the stencil-seating moment rendered end to end.
 - `SIM_HZ = 960` and `CHECK_HZ = 960`. The tolerance is 0.0005 m when either body in a pair is simulated, and 1e-7 m for every other pair.
 - A test that enforces a CONTINUITY rule has the rule's ID in its title, e.g. `test("[PHYS-01] …")`. In the same commit, flip that rule from `(planned)` to `(test)` in `docs/CONTINUITY.md`.
 - Never name the reference hooking libraries listed in `AGENTS.md` under `src/`, `public/` or `docs/` (specs and plans excepted). Code from `reference/tibik-papiertonne` may be ported.
-- Commits are authored by the configured identity (HugeFrog24). Every commit message ends with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commits are authored by the configured identity (HugeFrog24). **Commit messages are one word, with no body and no trailer** (owner).
+- No code comments, except tool directives (owner). `npm run strip` removes them, and `comments.test.ts` fails if any remain.
+- Run `npm run dupes` after every task (jscpd at five levels: exact, renamed, near-miss, similarity, semantic), and remove or justify each clone (owner).
+- Consult current docs before implementing: the remotion-docs skill for Remotion, and official docs or installed `.d.ts` files for every other library (owner).
+- **Resolution independence (owner).** 4K and 8K are `--scale=2` and `--scale=4` of the same 1080×1920 compositions. In 3D or render code, never hard-code output pixels. Pixel-measured values go through `inRenderPixels` (Task 11), and close-read textures are sized with `textureTier` (Task 11).
 - Before each commit, `npm run lint` (eslint + tsc) and `npx vitest run` must pass.
+- **Execution order (ruling, 2026-11-13):** 1–9, then **11**, then 10, then **12**. Task 11 produces the resolution module that Task 10 consumes, and Task 12 needs Task 10's render.
 
 ## Review Focus
 
@@ -615,7 +620,13 @@ Message: `feat: stencil-seat scene with physics, camera and time checks`.
 - Delete: `src/scenes/ClockTest.tsx`, `src/spikes/LookSpike.tsx`, and their registrations
 
 **Interfaces:**
-- Consumes: Tasks 5 to 9, and the Task 1 pick.
+- Consumes:
+  - Tasks 5 to 9, and the Task 1 pick: hybrid, with the fixes recorded in the spec §6.
+  - Task 11's `src/render/resolution.ts`:
+    - `CANVAS_DPR` goes on the ThreeCanvas `dpr` prop in `Stage.tsx`.
+    - `glyphTextureSize(gl.getPixelRatio())` sizes each glyph `CanvasTexture`.
+    - `bloomLevels(ratio)` and `inRenderPixels(...)` set the bloom and reflector parameters.
+    - `capToGpu` limits every render target.
 - Produces:
   - `cameraPropsAt(scene, clock, frame, fps): CameraSetup`: pure, built only on `cameraForFrame`.
   - `SceneView: React.FC<{ scene: Scene; clock: StoryClock }>`. It draws every body's `localBoxes` at `poseAt(t)`, and the camera through `<CameraRig>` from `cameraPropsAt`.
@@ -656,6 +667,111 @@ Run:
 
 Expected: every frame's hash is identical between the two folders.
 
-- [ ] **Step 7: CHECKPOINT. The owner reviews the stills.**
+- [ ] **Step 7: Hand over to Task 12**
 
-Show the stills and the results of Steps 5 and 6. The owner's comments feed the first chapter plan.
+The owner checkpoint moved to Task 12, after the pixel tests. Report the stills' paths and the results of Steps 5 and 6.
+
+---
+
+### Task 11: Resolution module and unit pixel tests (RES-01, RES-02, RES-03). Runs before Task 10.
+
+**Files:**
+- Create: `src/render/resolution.ts` and `src/render/resolution.test.ts`
+- Create: `src/render/glyphFraming.ts` and `src/render/glyphFraming.test.ts`
+
+**Interfaces:**
+- Consumes:
+  - `cameraAt` and `Shot` (Task 7)
+  - `tilePose`, `tileBoxes`, `TILE_SIZE` and `TILE_HEIGHT` (Task 5)
+  - `stencilSeatScene` (Task 9)
+- Produces:
+  - `FINEST_PIXEL_RATIO = 4`
+  - `CANVAS_DPR: readonly [1, 4]`
+  - `BASE_HEIGHT = 1920`, `BASE_WIDTH = 1080`
+  - `inRenderPixels(px1080: number, pixelRatio: number): number`, which returns `px1080 * pixelRatio`
+  - `textureTier(pixelRatio: number): 1 | 2 | 4`, which is `min(4, 2^ceil(log2(max(1, pixelRatio))))`
+  - `GLYPH_TEXELS_1080 = 128`
+  - `glyphTextureSize(pixelRatio: number, maxTextureSize = 16384): number`, which is `capToGpu(GLYPH_TEXELS_1080 * textureTier(pixelRatio), maxTextureSize)`
+  - `BLOOM_LEVELS_1080 = 6`
+  - `bloomLevels(pixelRatio: number): number`, which is `BLOOM_LEVELS_1080 + log2(textureTier(pixelRatio))`
+  - `bloomExtentFraction(levels: number, pixelRatio: number): number`, the halo's reach as a fraction of the frame height, modelled as `2^levels / (BASE_HEIGHT * pixelRatio)`
+  - `capToGpu(size: number, maxTextureSize: number): number`
+  - `PIXEL_PARAMS_1080: Readonly<Record<string, number>>`, the one table of every pixel-measured render parameter (bloom radius in px, reflector blur in px, edge-glow width in px)
+  - `closestGlyphPixels(scene: Scene, hz: number): { t: number; tile: string; pixels: number }`. It returns the largest on-screen size, in 1080p pixels, of any tile front face over the scene's shots. The face is projected with the camera from `cameraAt` and its vertical fov at a 9:16 aspect.
+
+- [ ] **Step 1: Before writing code, check the docs**
+
+Read and cite:
+- Remotion's output-scaling docs (`/docs/scaling.md` and the CLI `--scale` option)
+- R3F's `dpr` canvas prop
+- the `postprocessing` docs for `MipmapBlurPass` and Bloom's `levels`/`radius`
+
+If `levels` is named differently in `postprocessing` 6.39.6, keep `bloomLevels` and map it in Task 10.
+
+- [ ] **Step 2: Write the failing tests**
+  - `[RES-01] the canvas renders at the render's pixel ratio from 1 to 4`: `CANVAS_DPR` equals `[1, 4]`, and for r in {1, 1.5, 2, 3, 4}, `clamp(r, CANVAS_DPR) === r`. Implement `clamp` in the test the same way R3F's `calculateDpr` clamps a range.
+  - `[RES-02] pixel-measured effects scale with the pixel ratio and keep their extent`:
+    - Every entry of `PIXEL_PARAMS_1080` at ratio r equals `inRenderPixels(base, r)` for r in {1, 2, 4}.
+    - `bloomExtentFraction(bloomLevels(r), r)` is identical for r in {1, 2, 4}.
+    - `bloomLevels(1) === BLOOM_LEVELS_1080`.
+  - `[RES-03] glyph textures keep at least one texel per output pixel at the closest framing, within GPU limits`:
+    - For r in {1, 2, 4}: `glyphTextureSize(r) >= closestGlyphPixels(stencilSeatScene(track), 60).pixels * r`.
+    - `glyphTextureSize(4, 16384) <= 16384`, and `glyphTextureSize(4, 256) === 256`.
+  - The tier steps:
+    - `textureTier(1) === 1`, `textureTier(1.5) === 2`, `textureTier(2) === 2`, `textureTier(3) === 4`, `textureTier(4) === 4`, `textureTier(8) === 4`.
+    - `glyphTextureSize(1) === 128` and `glyphTextureSize(4) === 512`.
+
+- [ ] **Steps 3–5: Run them to check they fail, implement, then run them to check they pass**
+
+Then flip RES-01, RES-02 and RES-03 to `(test)`. Run `npm run strip`, `npm run dupes` and `npm run lint`.
+
+- [ ] **Step 6: Commit**
+
+Message: `resolution`.
+
+---
+
+### Task 12: Render-level pixel test (RES-04) and owner checkpoint
+
+**Files:**
+- Modify: `package.json`. Add `@remotion/bundler`, `@remotion/renderer` and `pngjs` via `npx remotion add` for the Remotion packages and an exact-pinned dev install for `pngjs` and `@types/pngjs`, checking the docs first. Add the script `"test:render": "vitest run --config vitest.render.config.mts"`.
+- Create: `vitest.render.config.mts`, with `include: ["src/**/*.render.test.ts"]` and `testTimeout: 900_000`.
+- Modify: `vitest.config.mts`. Exclude `src/**/*.render.test.ts` from the default run.
+- Create: `src/render/downsample.ts` and `src/render/downsample.test.ts`
+- Create: `src/render/pixels.render.test.ts`
+
+**Interfaces:**
+- Produces:
+  - `boxDownsample(rgba: Uint8Array, width: number, height: number, factor: number): Uint8Array`
+  - `compareImages(a: Uint8Array, b: Uint8Array, width: number, height: number, block = 64): { meanAbs: number; worstBlock: number }`. Both values are in 0–1 units of a channel.
+
+- [ ] **Step 1: Write the failing unit tests (default suite)**
+
+These go in `downsample.test.ts`:
+- `boxDownsample` of a 4×4 image with factor 2 averages each 2×2 block exactly.
+- `compareImages` of identical images is `{ meanAbs: 0, worstBlock: 0 }`.
+- A single 64×64 block offset by 10/255 gives `worstBlock ≈ 10/255`.
+
+- [ ] **Step 2: Write `[RES-04] 4K and 8K stills match the 1080p still when shrunk back`**
+
+This is `pixels.render.test.ts`:
+1. Bundle once with `@remotion/bundler`.
+2. `renderStill` the `StencilSeat` composition at frames `round(0.5 * 30)` and `round((STENCIL_SEAT_SECONDS - 0.5) * 30)`, at `scale` 1, 2 and 4, with `imageFormat: "png"` and `chromiumOptions: { gl: "angle" }`.
+3. Assert the output sizes are 1080×1920, 2160×3840 and 4320×7680.
+4. Box-downsample scale 2 by 2 and scale 4 by 4, then compare each with scale 1: `meanAbs <= 2/255` and `worstBlock <= 8/255`.
+5. Write the comparison numbers to `out/pixels-report.json`.
+
+- [ ] **Step 3: Run and calibrate**
+
+Run `npm run test:render`.
+- If it fails, find the cause, for example an effect parameter that bypasses `inRenderPixels`, and fix that cause.
+- Loosen a threshold only with a measured justification in the report. The spec marks the thresholds "builder to confirm".
+- Flip RES-04 to `(test)`.
+
+- [ ] **Step 4: Commit**
+
+Message: `pixels`.
+
+- [ ] **Step 5: CHECKPOINT. The owner reviews.**
+
+Show the Task 10 stills, the 4K/8K comparison numbers, and the frame-rate and concurrency results from Task 10, Steps 5 and 6. The owner's comments feed the first chapter plan.
