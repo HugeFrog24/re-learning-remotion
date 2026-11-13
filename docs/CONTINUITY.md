@@ -15,10 +15,10 @@ Rules tagged `(test)` are enforced by `npm test`. A `(planned)` rule becomes `(t
 - **BAKE-01** (planned) Every bake matches its inputs (hash in the manifest).
 - **ACC-01** (test) Every byte string shown decodes, with iced-x86 in 64-bit mode, to exactly the mnemonic shown with it.
 - **ACC-02** (test) Every address shown is consistent with the instruction lengths and with the module-base model (preferred base in disassembler views, game.exe+RVA at runtime).
-- **ACC-03** (planned) Each pattern seats exactly once in the tape shown with it, and the backward scan stops at the function start.
+- **ACC-03** (test) Each pattern seats exactly once in the tape shown with it, and the backward scan stops at the function start.
 - **ACC-04** (planned) Pseudocode and stripped names agree with §5 (call target, offset, argument types).
-- **ACC-05** (planned) At every moment, each tile's pins equal its byte, and its glyph shows the pins.
-- **ACC-06** (planned) Stencil keying is exact. For every expected byte and every actual byte (all 256 × 256 pairs), a cell fits only when they are equal.
+- **ACC-05** (test) At every moment, each tile's pins equal its byte, and its glyph shows the pins.
+- **ACC-06** (test) Stencil keying is exact. For every expected byte and every actual byte (all 256 × 256 pairs), a cell fits only when they are equal.
 - **ACC-07** (planned) Every ruler reading equals the byte distance it spans, and every offset named on screen matches the bytes and addresses (e.g. +0x10 in the original build, +0x14 after the update).
 - **SND-01** (planned) A sound starts on the frame its motion first shows, or up to one frame later, never earlier. This is measured from the audible onset, after the file's lead-in silence (the stock ding has about 100 ms).
 - **TXT-01** (planned) On-screen text stays inside the safe area and meets the minimum sizes.
