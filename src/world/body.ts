@@ -1,3 +1,4 @@
+import type { Shot } from "./camera";
 import type { Obb } from "../physics/collision";
 import { toObb, type LocalBox, type Pose } from "./geometry";
 
@@ -27,7 +28,7 @@ export type Scene = {
   readonly id: string;
   readonly duration: number;
   readonly bodies: readonly Body[];
-  readonly shots: readonly unknown[];
+  readonly shots: readonly Shot[];
 };
 
 export const solidsAt = (body: Body, t: number): readonly Obb[] => {
