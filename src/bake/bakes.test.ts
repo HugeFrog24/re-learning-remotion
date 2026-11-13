@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { expect, test } from "vitest";
 import { sampleTimes } from "../physics/sweep";
 import type { Scene } from "../world/body";
+import type { BakeTrack } from "../world/track";
 import { dropScene } from "./fixtures";
 import { bakeInputs, inputHash, RAPIER_VERSION, SIM_HZ } from "./inputs";
 import { BAKES } from "./registry";
@@ -39,6 +40,13 @@ test("[BAKE-01] every bake matches its inputs", async () => {
   expect(Object.keys(readManifest())).toEqual(
     BAKES.map((bake) => bake.id).sort(),
   );
+});
+
+test("[BAKE-01] every committed bake is exactly what the simulator makes of its scene today", async () => {
+  for (const { id, scene } of BAKES) {
+    const committed: BakeTrack = JSON.parse(readFileSync(bakeFile(id), "utf8"));
+    expect(await simulate(scene(null)), id).toEqual(committed);
+  }
 });
 
 test("moving the release time changes the hash", () => {

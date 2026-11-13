@@ -346,7 +346,7 @@ docs/CONTINUITY.md, AGENTS.md, CLAUDE.md
 | CAM-03 | The camera the render uses is the camera the checks measure. |
 | TIME-01 | The world state at time *t* is identical at every fps (30, 60, 24 and 50 are tested). |
 | TIME-02 | No unseeded randomness or wall-clock reads in world, bake or render code. |
-| BAKE-01 | Every bake matches its inputs (hash in the manifest). |
+| BAKE-01 | Every bake matches its inputs (hash in the manifest), and re-simulating its scene reproduces it exactly, so a change to the simulator cannot leave it stale. |
 | ACC-01 | Every byte string shown decodes, with `iced-x86` in 64-bit mode, to exactly the mnemonic shown with it. |
 | ACC-02 | Every address shown is consistent with the instruction lengths and with the module-base model (preferred base in disassembler views, `game.exe+RVA` at runtime). |
 | ACC-03 | Each pattern seats exactly once in the tape shown with it, and the backward scan stops at the function start. |
