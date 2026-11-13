@@ -12,17 +12,13 @@ describe("continuity parsing", () => {
     ]);
   });
 
-  test("finds IDs in test titles", () => {
+  test("finds IDs only in test titles", () => {
     const sample = readFileSync("src/tooling/fixtures/cited-sample.txt", "utf8");
-    expect(citedIds(sample)).toEqual(["PHYS-01", "CAM-02"]);
+    expect(citedIds(sample)).toEqual(["PHYS-01", "CAM-02", "ACC-05", "SND-01"]);
   });
 
-  test("ignores IDs that do not open a title", () => {
-    expect(citedIds('test("a [PHYS-01]", f); const x = "[CAM-01] y"')).toEqual([]);
-  });
-
-  test("finds IDs in each-forms", () => {
-    expect(citedIds('test.each([1])("[ACC-05] a", f)')).toEqual(["ACC-05"]);
+  test("cites only DOC-01 in its own source", () => {
+    expect(citedIds(readFileSync("src/tooling/continuity.test.ts", "utf8"))).toEqual(["DOC-01"]);
   });
 });
 

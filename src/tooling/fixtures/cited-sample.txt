@@ -1,1 +1,9 @@
 test("[PHYS-01] a", f); describe("[CAM-02] b", f)
+test.each([1])("[ACC-05] each", f)
+it.skip("[SND-01] skipped", f)
+test("no id here", () => {
+  const body = 'test("[ZZZ-99] x", f)';
+  check("[ZZZ-98] y");
+})
+test("late [ZZZ-97]", f)
+other.test("[ZZZ-96] z", f)
