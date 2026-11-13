@@ -1,4 +1,3 @@
-import { storyTimeOfFrame, type StoryClock } from "./clock";
 import type { Vec3 } from "./geometry";
 
 export type CameraSetup = {
@@ -48,10 +47,3 @@ export const validateShots = (
   });
   return problems;
 };
-
-export const cameraForFrame = (
-  shots: readonly Shot[],
-  frame: number,
-  fps: number,
-  clock: StoryClock,
-): CameraSetup => cameraAt(shots, storyTimeOfFrame(frame, fps, clock));

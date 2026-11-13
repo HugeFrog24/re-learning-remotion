@@ -2,13 +2,13 @@ import { useCurrentFrame, useVideoConfig } from "remotion";
 import { CameraRig, Stage, useRenderPixels } from "../lib/Stage";
 import { FLOOR_ID, type Body, type Scene } from "../world/body";
 import type { CameraSetup } from "../world/camera";
-import { storyTimeOfFrame, type StoryClock } from "../world/clock";
+import type { StoryClock } from "../world/clock";
 import { isStencil } from "../world/stencil";
 import { RAIL_ID, TILE_ID_PREFIX } from "../world/tape";
 import { FloorMesh } from "./FloorMesh";
 import { Glow } from "./Glow";
+import { frameView } from "./frameView";
 import { useFaces, useGlyphFont, type Faces } from "./glyphTexture";
-import { cameraPropsAt } from "./lens";
 import { AMBIENT, KEY_LIGHT, SLED_LIGHT } from "./look";
 import { RailMesh } from "./RailMesh";
 import { capToGpu, glyphTextureSize } from "./resolution";
@@ -74,25 +74,19 @@ const Bodies: React.FC<{
   ));
 };
 
-const Shot: React.FC<{
+const Frame: React.FC<{
   readonly scene: Scene;
   readonly clock: StoryClock;
 }> = ({ scene, clock }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const family = useGlyphFont();
-  const camera = cameraPropsAt(scene, clock, frame, fps);
+  const view = frameView(scene, clock, frame, fps);
   return (
     <>
-      <CameraRig setup={camera} />
-      <Lights camera={camera} />
-      {family ? (
-        <Bodies
-          scene={scene}
-          t={storyTimeOfFrame(frame, fps, clock)}
-          family={family}
-        />
-      ) : null}
+      <CameraRig setup={view.camera} />
+      <Lights camera={view.camera} />
+      {family ? <Bodies scene={scene} t={view.t} family={family} /> : null}
       <Glow ready={family !== null} />
     </>
   );
@@ -103,6 +97,6 @@ export const SceneView: React.FC<{
   readonly clock: StoryClock;
 }> = ({ scene, clock }) => (
   <Stage>
-    <Shot scene={scene} clock={clock} />
+    <Frame scene={scene} clock={clock} />
   </Stage>
 );

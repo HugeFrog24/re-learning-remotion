@@ -1,19 +1,10 @@
 import { PerspectiveCamera, Vector3 } from "three";
-import type { Scene } from "../world/body";
-import { cameraForFrame, type CameraSetup } from "../world/camera";
-import type { StoryClock } from "../world/clock";
+import type { CameraSetup } from "../world/camera";
 import { BASE_HEIGHT, BASE_WIDTH } from "./resolution";
 
 export const CAMERA_NEAR = 0.01;
 export const CAMERA_FAR = 20;
 export const LENS_ASPECT = BASE_WIDTH / BASE_HEIGHT;
-
-export const cameraPropsAt = (
-  scene: Scene,
-  clock: StoryClock,
-  frame: number,
-  fps: number,
-): CameraSetup => cameraForFrame(scene.shots, frame, fps, clock);
 
 export const placeCamera = (
   camera: PerspectiveCamera,

@@ -1,6 +1,5 @@
 import { expect, test } from "vitest";
-import { cameraAt, cameraForFrame, validateShots, type Shot } from "./camera";
-import { heldClock } from "./clock";
+import { cameraAt, validateShots, type Shot } from "./camera";
 
 const shot = (name: string, from: number, to: number, x: number): Shot => ({
   name,
@@ -29,10 +28,4 @@ test("validateShots reports gaps, overlaps, bad ends and off-grid cuts", () => {
   expect(validateShots([shot("a", 1, 10, 0)], 10).join()).toMatch(/first/);
   expect(validateShots([shot("a", 0, 9, 0)], 10).join()).toMatch(/last/);
   expect(validateShots([shot("a", 0, 1.01, 0), shot("b", 1.01, 10, 0)], 10).join()).toMatch(/1\.01/);
-});
-
-test("cameraForFrame equals cameraAt at frame over fps", () => {
-  const clock = heldClock([]);
-  for (let f = 0; f < 300; f++) expect(cameraForFrame(SHOTS, f, 30, clock)).toEqual(cameraAt(SHOTS, f / 30));
-  for (let f = 0; f < 600; f++) expect(cameraForFrame(SHOTS, f, 60, clock)).toEqual(cameraAt(SHOTS, f / 60));
 });
