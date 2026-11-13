@@ -51,6 +51,14 @@ describe("roughMotion", () => {
     expect(roughMotion(released, { hz: 960, from: 0, to: 1 })).toEqual([]);
   });
 
+  it("flags a jerk while a simulated tool still hovers", () => {
+    const hovering = hoverUntil(along(stopping), 0.8);
+    const found = roughMotion(hovering, { hz: 960, from: 0, to: 1 });
+    expect(found.length).toBeGreaterThan(0);
+    expect(found[0].t).toBeCloseTo(0.5, 2);
+    expect(found.filter((each) => each.t > 0.8)).toEqual([]);
+  });
+
   it("ignores static bodies", () => {
     const fixed = along(stopping, { motion: "static" });
     expect(roughMotion(fixed, { hz: 960, from: 0, to: 1 })).toEqual([]);

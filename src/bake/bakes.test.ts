@@ -1,10 +1,16 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { expect, test } from "vitest";
 import { sampleTimes } from "../physics/sweep";
-import type { Scene } from "../world/body";
+import type { Body, Scene } from "../world/body";
 import type { BakeTrack } from "../world/track";
 import { dropScene } from "./fixtures";
-import { bakeInputs, inputHash, RAPIER_VERSION, SIM_HZ } from "./inputs";
+import {
+  bakeInputs,
+  inputHash,
+  RAPIER_VERSION,
+  SIM_HZ,
+  validateScene,
+} from "./inputs";
 import { BAKES } from "./registry";
 import { simulate } from "./simulate";
 
@@ -47,6 +53,45 @@ test("[BAKE-01] every committed bake is exactly what the simulator makes of its 
     const committed: BakeTrack = JSON.parse(readFileSync(bakeFile(id), "utf8"));
     expect(await simulate(scene(null)), id).toEqual(committed);
   }
+});
+
+test("every registered bake's scene is valid", () => {
+  for (const { id, scene } of BAKES) {
+    expect(validateScene(scene(null)), id).toEqual([]);
+  }
+});
+
+test("validateScene reports reused body ids, releases off the step grid or outside the scene, and bad shots", () => {
+  const filmed = (scene: Scene): Scene => ({
+    ...scene,
+    shots: [
+      {
+        name: "all",
+        from: 0,
+        to: scene.duration,
+        at: () => ({ position: [0, 1, 1], target: [0, 0, 0], fov: 30, roll: 0 }),
+      },
+    ],
+  });
+  const valid = filmed(dropScene(0.1));
+  expect(validateScene(valid)).toEqual([]);
+  const [floor, tile] = valid.bodies;
+  expect(
+    validateScene({ ...valid, bodies: [...valid.bodies, floor] }),
+  ).toEqual(["body id floor is used 2 times"]);
+  expect(validateScene(filmed(dropScene(0.1 + 0.5 / SIM_HZ)))).toEqual([
+    `tile releases at ${0.1 + 0.5 / SIM_HZ} s, off the 1/${SIM_HZ} s step grid`,
+  ]);
+  for (const at of [0, 0.4]) {
+    expect(validateScene(filmed(dropScene(at)))).toEqual([
+      `tile releases at ${at} s, outside the scene's (0, 0.4) s`,
+    ]);
+  }
+  const unreleased: Body = { ...tile, release: undefined };
+  expect(
+    validateScene({ ...valid, bodies: [floor, unreleased] }),
+  ).toEqual(["simulated body tile has no release"]);
+  expect(validateScene({ ...valid, shots: [] })).toEqual(["no shots"]);
 });
 
 test("moving the release time changes the hash", () => {

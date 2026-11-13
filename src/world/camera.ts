@@ -37,6 +37,7 @@ export const validateShots = (
   if (first.from !== 0) problems.push(`first shot starts at ${first.from}, not 0`);
   if (last.to !== duration) problems.push(`last shot ends at ${last.to}, not ${duration}`);
   shots.forEach((shot, i) => {
+    if (!(shot.to > shot.from)) problems.push(`${shot.name} runs from ${shot.from} to ${shot.to}, not forwards`);
     for (const cut of [shot.from, shot.to]) {
       if (offFrame(cut)) problems.push(`${shot.name} cut ${cut} is off the ${BASE_FPS} fps grid`);
     }

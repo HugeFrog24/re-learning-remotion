@@ -50,6 +50,17 @@ describe("sweep", () => {
     expect(sweep(scene(0, [anchor, kin]), { hz: 10 })).toHaveLength(1);
   });
 
+  it("tolerates a kinematic overlap below the kinematic epsilon", () => {
+    const grazing = body("k", "kinematic", () =>
+      at([0.02 - KINEMATIC_EPSILON / 2, 0, 0]),
+    );
+    expect(sweep(scene(0, [anchor, grazing]), { hz: 10 })).toEqual([]);
+    const pressing = body("k", "kinematic", () =>
+      at([0.02 - 2 * KINEMATIC_EPSILON, 0, 0]),
+    );
+    expect(sweep(scene(0, [anchor, pressing]), { hz: 10 })).toHaveLength(1);
+  });
+
   it("holds a hovering body to the kinematic epsilon until its release", () => {
     const overlapping = body("h", "kinematic", () => at([0.02 - 0.0004, 0, 0]));
     const found = sweep(
@@ -59,8 +70,9 @@ describe("sweep", () => {
     expect(found.map((violation) => violation.t)).toEqual([0, 0.1, 0.2, 0.3, 0.4]);
   });
 
-  it("skips static pairs and boxes of the same body", () => {
-    const two = body("c", "static", () => at([0, 0, 0]));
+  it("checks static pairs once, at the first sample, and never a body against itself", () => {
+    const two = body("c", "static", () => at([0.01, 0, 0]));
+    const apart = body("d", "static", () => at([0.5, 0, 0]));
     const compound: Body = {
       ...body("k", "kinematic", () => at([1, 0, 0])),
       localBoxes: [
@@ -68,7 +80,15 @@ describe("sweep", () => {
         box("y", [0, 0, 0], [0.02, 0.02, 0.02]),
       ],
     };
-    expect(sweep(scene(1, [anchor, two, compound]), { hz: 10 })).toEqual([]);
+    const world = scene(1, [anchor, two, apart, compound]);
+    const found = sweep(world, { hz: 10 });
+    expect(found.map(({ t, a, b }) => ({ t, a, b }))).toEqual([
+      { t: 0, a: "a/b", b: "c/b" },
+    ]);
+    expect(found[0].depth).toBeCloseTo(0.01, 12);
+    expect(sweep(world, { hz: 10, from: 0.5 }).map(({ t }) => t)).toEqual([
+      0.5,
+    ]);
   });
 
   it("samples the exact end time", () => {

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
-import { SIM_HZ } from "../../bake/inputs";
+import { SIM_HZ, validateScene } from "../../bake/inputs";
 import { cameraClearance, roughCamera } from "../../physics/cameraChecks";
 import { collide } from "../../physics/collision";
 import {
@@ -70,7 +70,8 @@ const bruteForce = (world: Scene, opts: Required<SweepOptions>) => {
     const solids = world.bodies.map((each) => solidsAt(each, t));
     world.bodies.forEach((a, i) =>
       world.bodies.slice(i + 1).forEach((b, offset) => {
-        if (a.motion === "static" && b.motion === "static") return;
+        if (a.motion === "static" && b.motion === "static" && t !== opts.from)
+          return;
         const limit = contactLimit(a, b, t);
         for (const boxA of solids[i]) {
           for (const boxB of solids[i + 1 + offset]) {
@@ -192,6 +193,10 @@ describe("stencil-seat scene", () => {
       });
       for (const world of worlds) expect(world).toEqual(worlds[0]);
     }
+  });
+
+  test("the scene is valid: unique body ids, releases on the step grid inside the scene, valid shots", () => {
+    expect(validateScene(scene)).toEqual([]);
   });
 
   test("the release fires on the simulation step grid", () => {

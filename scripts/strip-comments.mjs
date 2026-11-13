@@ -3,8 +3,15 @@ import { extname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import ts from "typescript";
 
-export const ROOTS = ["src", "scripts", "remotion.config.ts", "eslint.config.mjs"];
-export const EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
+export const ROOTS = [
+  "src",
+  "scripts",
+  "remotion.config.ts",
+  "eslint.config.mjs",
+  "vitest.config.mts",
+  "vitest.render.config.mts",
+];
+export const EXTENSIONS = new Set([".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"]);
 const DIRECTIVE = /^(\/\/\/|\/[/*]\s*(eslint|@ts-|prettier-ignore|@jsx|global\s))/;
 const SHADER = /gl_|#include|uniform |varying /;
 

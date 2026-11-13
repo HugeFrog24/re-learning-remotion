@@ -37,10 +37,41 @@ const nodeImports = (file: string, text: string) =>
     .importedFiles.map((reference) => reference.fileName)
     .filter((specifier) => nodeOnly(file, specifier));
 
+const UNSEEDED =
+  /Math\.random|Date\.now|\bDate\(|performance\.now|getRandomValues|randomUUID/;
+const SELF_RUNNING = /\buseFrame\b/;
+
 test("[TIME-02] no unseeded randomness or wall-clock reads", () => {
+  expect(offending(UNSEEDED, sources())).toEqual([]);
+});
+
+test("the TIME-02 pattern sees every way of reading randomness or the clock", () => {
+  const caught = [
+    "Math.random()",
+    "Date.now()",
+    "new Date()",
+    "const today = Date();",
+    "String(Date(0))",
+    "performance.now()",
+    "crypto.getRandomValues(bytes)",
+    "globalThis.crypto.getRandomValues(new Uint8Array(4))",
+    "crypto.randomUUID()",
+  ];
+  const allowed = ["seeded(7)()", "toDate(x)", "update()", "const dated = 1;"];
+  expect(caught.filter((line) => !UNSEEDED.test(line))).toEqual([]);
+  expect(allowed.filter((line) => UNSEEDED.test(line))).toEqual([]);
+});
+
+test("no source runs its own animation loop with R3F's useFrame", () => {
+  expect(sources().length).toBeGreaterThan(0);
+  expect(offending(SELF_RUNNING, sources())).toEqual([]);
   expect(
-    offending(/Math\.random|Date\.now|new Date\(|performance\.now/, sources()),
+    [
+      'import { useFrame } from "@react-three/fiber";',
+      "useFrame((state) => state.clock)",
+    ].filter((line) => !SELF_RUNNING.test(line)),
   ).toEqual([]);
+  expect(SELF_RUNNING.test("const frame = useCurrentFrame();")).toBe(false);
 });
 
 test("only the bake modules and tests load Rapier, Node built-ins or the Node-only bake modules", () => {

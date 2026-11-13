@@ -22,6 +22,13 @@ test("validateShots accepts a clean list", () => {
   expect(validateShots(SHOTS, 10)).toEqual([]);
 });
 
+test("validateShots rejects a shot that does not run forwards, even when its cuts line up", () => {
+  const hiding = [shot("a", 0, 5, 0), shot("b", 5, 3, 0), shot("c", 3, 10, 0)];
+  expect(validateShots(hiding, 10)).toEqual(["b runs from 5 to 3, not forwards"]);
+  const empty = [shot("a", 0, 4, 0), shot("b", 4, 4, 0), shot("c", 4, 10, 0)];
+  expect(validateShots(empty, 10)).toEqual(["b runs from 4 to 4, not forwards"]);
+});
+
 test("validateShots reports gaps, overlaps, bad ends and off-grid cuts", () => {
   expect(validateShots([shot("a", 0, 4, 0), shot("b", 5, 10, 0)], 10).join()).toMatch(/gap/);
   expect(validateShots([shot("a", 0, 5, 0), shot("b", 4, 10, 0)], 10).join()).toMatch(/overlap/);

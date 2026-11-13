@@ -25,7 +25,15 @@ test("no comments remain in source files", () => {
       return [];
     }
   });
-  expect(files.length).toBeGreaterThan(0);
+  expect(files.map((file) => file.split("\\").join("/"))).toEqual(
+    expect.arrayContaining([
+      "vitest.config.mts",
+      "vitest.render.config.mts",
+      "scripts/strip-comments.d.mts",
+      "scripts/strip-comments.mjs",
+      "src/index.ts",
+    ]),
+  );
   const dirty = files.filter((file) => {
     const text = readFileSync(file, "utf8");
     return stripComments(text, file) !== text;

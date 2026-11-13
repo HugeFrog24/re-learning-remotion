@@ -106,16 +106,17 @@ export const sweep = (scene: Scene, opts: SweepOptions): Violation[] => {
   const to = opts.to ?? scene.duration;
   const placed = scene.bodies.map(place);
   const violations: Violation[] = [];
-  for (const t of sampleTimes(opts.hz, from, to)) {
+  sampleTimes(opts.hz, from, to).forEach((t, k) => {
     for (const p of placed) moveTo(p, t);
     for (let i = 0; i < placed.length; i++) {
       for (let j = i + 1; j < placed.length; j++) {
         const a = placed[i];
         const b = placed[j];
-        if (a.body.motion === "static" && b.body.motion === "static") continue;
+        const still = a.body.motion === "static" && b.body.motion === "static";
+        if (still && k > 0) continue;
         if (near(a, b)) pairViolations(t, a, b, violations);
       }
     }
-  }
+  });
   return violations;
 };
