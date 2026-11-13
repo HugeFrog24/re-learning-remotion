@@ -85,3 +85,40 @@ export const wiringOf = (text: string, file = "wired.tsx"): Wiring => {
     values: (name) => values.get(name) ?? [],
   };
 };
+
+export type Expected = {
+  readonly absent?: readonly string[];
+  readonly imports?: Readonly<Record<string, readonly string[]>>;
+  readonly calls?: Readonly<Record<string, readonly (readonly string[])[]>>;
+  readonly values?: Readonly<Record<string, readonly string[]>>;
+  readonly props?: Readonly<Record<string, readonly string[]>>;
+};
+
+const differs = (what: string, actual: unknown, wanted: unknown): string[] =>
+  JSON.stringify(actual) === JSON.stringify(wanted)
+    ? []
+    : [`${what} is ${JSON.stringify(actual)}, not ${JSON.stringify(wanted)}`];
+
+const each = <T>(
+  table: Readonly<Record<string, T>> | undefined,
+  check: (key: string, wanted: T) => string[],
+) => Object.entries(table ?? {}).flatMap(([key, wanted]) => check(key, wanted));
+
+export const unwired = (wiring: Wiring, expected: Expected): string[] => [
+  ...(expected.absent ?? [])
+    .filter((name) => wiring.names.has(name))
+    .map((name) => `${name} is used`),
+  ...each(expected.imports, (from, names) =>
+    differs(`import from ${from}`, wiring.imports(from), names),
+  ),
+  ...each(expected.calls, (callee, args) =>
+    differs(`${callee}()`, wiring.calls(callee), args),
+  ),
+  ...each(expected.values, (name, wanted) =>
+    differs(name, wiring.values(name), wanted),
+  ),
+  ...each(expected.props, (key, wanted) => {
+    const [element, attribute] = key.split(".");
+    return differs(`<${key}>`, wiring.props(element, attribute), wanted);
+  }),
+];

@@ -111,93 +111,89 @@ beforeAll(async () => {
   }
 });
 
-test("[RES-04] 4K and 8K stills match the 1080p still when shrunk back", () => {
-  const report: object[] = [];
+type Measured = {
+  readonly measured: object;
+  readonly detail: object;
+  readonly failed: boolean;
+};
+
+const comparePairs = (
+  reportFile: string,
+  limits: object,
+  check: (frame: number, scale: number, base: Picture, big: Picture) => Measured,
+): string[] => {
+  const results: object[] = [];
   const failures: string[] = [];
   for (const frame of FRAMES) {
-    const base = still(frame, 1);
-    for (const scale of SCALES) {
-      const png = still(frame, scale);
-      expect([png.width, png.height]).toEqual([
-        BASE_WIDTH * scale,
-        BASE_HEIGHT * scale,
-      ]);
-    }
     for (const scale of [2, 4]) {
-      const big = still(frame, scale);
-      const small = boxDownsample(
-        new Uint8Array(big.data),
-        big.width,
-        big.height,
-        scale,
-      );
-      const diff = compareImages(
-        new Uint8Array(base.data),
-        small,
-        BASE_WIDTH,
-        BASE_HEIGHT,
-      );
-      writeFileSync(
-        `out/pixels/f${frame}-x${scale}-diff.png`,
-        heatMap(new Uint8Array(base.data), small, BASE_WIDTH, BASE_HEIGHT),
-      );
-      const row = {
-        frame,
-        scale,
-        renderSeconds: renderSeconds.get(`${frame}x${scale}`),
-        baseRenderSeconds: renderSeconds.get(`${frame}x1`),
-        meanAbs255: diff.meanAbs * 255,
-        worstBlock255: diff.worstBlock * 255,
-        worstBlockAt: diff.worstAt,
-      };
-      report.push(row);
-      if (diff.meanAbs > MEAN_LIMIT || diff.worstBlock > BLOCK_LIMIT) {
-        failures.push(JSON.stringify(row));
-      }
+      const base = picture(still(frame, 1));
+      const big = picture(still(frame, scale));
+      const { measured, detail, failed } = check(frame, scale, base, big);
+      results.push({ frame, scale, ...measured, ...detail });
+      if (failed) failures.push(JSON.stringify({ frame, scale, ...measured }));
     }
   }
-  writeFileSync(
+  writeFileSync(reportFile, JSON.stringify({ limits, results }, null, 2));
+  return failures;
+};
+
+test("[RES-04] 4K and 8K stills match the 1080p still when shrunk back", () => {
+  for (const frame of FRAMES) {
+    for (const scale of SCALES) {
+      const { width, height } = still(frame, scale);
+      expect([width, height]).toEqual([BASE_WIDTH * scale, BASE_HEIGHT * scale]);
+    }
+  }
+  const limits = { meanAbs255: MEAN_LIMIT * 255, worstBlock255: BLOCK_LIMIT * 255 };
+  const failures = comparePairs(
     "out/pixels-report.json",
-    JSON.stringify(
-      { limits: { meanAbs255: 2, worstBlock255: 8 }, results: report },
-      null,
-      2,
-    ),
+    limits,
+    (frame, scale, base, big) => {
+      const small = boxDownsample(big.rgba, big.width, big.height, scale);
+      const diff = compareImages(base.rgba, small, BASE_WIDTH, BASE_HEIGHT);
+      writeFileSync(
+        `out/pixels/f${frame}-x${scale}-diff.png`,
+        heatMap(base.rgba, small, BASE_WIDTH, BASE_HEIGHT),
+      );
+      return {
+        measured: {
+          meanAbs255: diff.meanAbs * 255,
+          worstBlock255: diff.worstBlock * 255,
+          worstBlockAt: diff.worstAt,
+        },
+        detail: {
+          renderSeconds: renderSeconds.get(`${frame}x${scale}`),
+          baseRenderSeconds: renderSeconds.get(`${frame}x1`),
+        },
+        failed: diff.meanAbs > MEAN_LIMIT || diff.worstBlock > BLOCK_LIMIT,
+      };
+    },
   );
   expect(failures).toEqual([]);
 });
 
 test("[RES-04] 4K and 8K stills carry real detail in the glyph regions, not an enlargement of the 1080p still", () => {
-  const report: object[] = [];
-  const failures: string[] = [];
-  for (const frame of FRAMES) {
-    const quads = glyphQuads(frame);
+  const glyphs = new Map(FRAMES.map((frame) => [frame, glyphQuads(frame)]));
+  for (const [frame, quads] of glyphs) {
     expect(quads.length, `glyph regions in frame ${frame}`).toBeGreaterThanOrEqual(
       MIN_GLYPH_REGIONS,
     );
-    const base = picture(still(frame, 1));
-    for (const scale of [2, 4]) {
-      const big = picture(still(frame, scale));
-      const total = detailRatio(big, base, scale, quads);
-      const each = quads.map((quad) => detailRatio(big, base, scale, [quad]).ratio);
-      const row = {
-        frame,
-        scale,
-        regions: quads.length,
-        ratio: total.ratio,
-        weakest: Math.min(...each),
-        each,
-        quads,
-      };
-      report.push(row);
-      if (total.ratio < DETAIL_LIMITS[scale]) {
-        failures.push(JSON.stringify({ frame, scale, ratio: total.ratio }));
-      }
-    }
   }
-  writeFileSync(
+  const failures = comparePairs(
     "out/pixels-detail.json",
-    JSON.stringify({ limits: DETAIL_LIMITS, results: report }, null, 2),
+    DETAIL_LIMITS,
+    (frame, scale, base, big) => {
+      const quads = glyphs.get(frame) ?? [];
+      const { ratio } = detailRatio(big, base, scale, quads);
+      const each = quads.map(
+        (quad) => detailRatio(big, base, scale, [quad]).ratio,
+      );
+      return {
+        measured: { regions: quads.length, ratio, weakest: Math.min(...each) },
+        detail: { each, quads },
+        failed: ratio < DETAIL_LIMITS[scale],
+      };
+    },
   );
   expect(failures).toEqual([]);
 });

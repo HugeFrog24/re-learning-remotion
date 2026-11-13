@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "vitest";
 import { stencilSeatScene } from "../chapters/00-stencil-seat/scene";
-import { wiringOf } from "../tooling/wiring";
+import { unwired, wiringOf } from "../tooling/wiring";
 import type { BakeTrack } from "../world/track";
 import { closestGlyphPixels } from "./glyphFraming";
 import {
@@ -48,9 +48,12 @@ test("[RES-01] the canvas renders at the render's pixel ratio from 1 to 4, and S
     expect(r3fDpr(canvasDpr(), ratio)).toBe(ratio);
   }
   expect(r3fDpr(canvasDpr(), 8)).toBe(FINEST_PIXEL_RATIO);
-  const stage = wired("src/lib/Stage.tsx");
-  expect(stage.props("ThreeCanvas", "dpr")).toEqual(["canvasDpr()"]);
-  expect(stage.imports("../render/resolution")).toEqual(["canvasDpr"]);
+  expect(
+    unwired(wired("src/lib/Stage.tsx"), {
+      imports: { "../render/resolution": ["canvasDpr"] },
+      props: { "ThreeCanvas.dpr": ["canvasDpr()"] },
+    }),
+  ).toEqual([]);
 });
 
 test("[RES-02] every pixel-measured effect, as its consumer computes it, keeps its 1080p extent at ratios 1, 2 and 4 and under a GPU clamp", () => {
@@ -115,33 +118,41 @@ test("[RES-02] the bloom keeps its extent: one extra pinned fine level per doubl
 });
 
 test("[RES-02] the mirror and the bloom take their sizes only from mirrorTarget and bloomConfig", () => {
-  const floor = wired("src/render/FloorMesh.tsx");
-  expect(floor.imports("./resolution")).toEqual(["mirrorTarget"]);
-  expect(floor.calls("mirrorTarget")).toEqual([["ratio", "maxTextureSize"]]);
-  expect(floor.calls("glossyMirror")).toEqual([
-    ["[sx, sz]", "mirrorTarget(ratio, maxTextureSize)"],
-  ]);
-  expect(floor.values("ratio")).toEqual(["useRenderPixels()"]);
-  expect(floor.values("textureWidth")).toEqual(["target.width"]);
-  expect(floor.values("textureHeight")).toEqual(["target.height"]);
-  expect(floor.calls("material.uniforms.texel.value.set")).toEqual([
-    ["1 / target.width", "1 / target.height"],
-  ]);
-  expect(floor.values("material.uniforms.blur.value")).toEqual([
-    "target.blurTexels",
-  ]);
-  const glow = wired("src/render/Glow.tsx");
-  expect(glow.imports("./resolution")).toEqual(["bloomConfig"]);
-  expect(glow.calls("bloomConfig")).toEqual([["ratio"]]);
-  expect(glow.values("ratio")).toEqual(["useRenderPixels()"]);
-  for (const name of ["levels", "radius", "fineSteps"]) {
-    expect(glow.values(name), name).toEqual(["bloomConfig(ratio)"]);
-  }
-  expect(glow.props("Bloom", "levels")).toEqual(["levels"]);
-  expect(glow.props("Bloom", "radius")).toEqual(["radius"]);
-  expect(glow.calls("pinFineMipSteps")).toEqual([
-    ["effect.mipmapBlurPass", "fineSteps", "radius"],
-  ]);
+  expect(
+    unwired(wired("src/render/FloorMesh.tsx"), {
+      imports: { "./resolution": ["mirrorTarget"] },
+      calls: {
+        mirrorTarget: [["ratio", "maxTextureSize"]],
+        glossyMirror: [["[sx, sz]", "mirrorTarget(ratio, maxTextureSize)"]],
+        "material.uniforms.texel.value.set": [
+          ["1 / target.width", "1 / target.height"],
+        ],
+      },
+      values: {
+        ratio: ["useRenderPixels()"],
+        textureWidth: ["target.width"],
+        textureHeight: ["target.height"],
+        "material.uniforms.blur.value": ["target.blurTexels"],
+      },
+    }),
+  ).toEqual([]);
+  const fromConfig = ["bloomConfig(ratio)"];
+  expect(
+    unwired(wired("src/render/Glow.tsx"), {
+      imports: { "./resolution": ["bloomConfig"] },
+      calls: {
+        bloomConfig: [["ratio"]],
+        pinFineMipSteps: [["effect.mipmapBlurPass", "fineSteps", "radius"]],
+      },
+      values: {
+        ratio: ["useRenderPixels()"],
+        levels: fromConfig,
+        radius: fromConfig,
+        fineSteps: fromConfig,
+      },
+      props: { "Bloom.levels": ["levels"], "Bloom.radius": ["radius"] },
+    }),
+  ).toEqual([]);
 });
 
 test("[RES-03] glyph textures keep at least one texel per output pixel at the closest framing, within GPU limits", () => {
@@ -162,21 +173,24 @@ test("[RES-03] glyph textures keep at least one texel per output pixel at the cl
 });
 
 test("[RES-03] glyph faces are painted at glyphTextureSize of the render's pixels", () => {
-  const view = wired("src/render/SceneView.tsx");
-  expect(view.calls("useFaces")).toEqual([
-    ["family", "glyphTextureSize(ratio, maxTextureSize)"],
-  ]);
-  expect(view.values("ratio")).toEqual(["useRenderPixels()"]);
-  expect(view.values("maxTextureSize")).toEqual([
-    "useRenderPixels()",
-    "useRenderPixels()",
-  ]);
-  const glyphs = wired("src/render/glyphTexture.ts");
-  expect(glyphs.calls("paintFace")).toEqual([["face", "family", "texels"]]);
-  expect(glyphs.values("perMetre")).toEqual([
-    "texels / Math.max(face.width, face.height)",
-  ]);
-  expect(glyphs.imports("./resolution")).toEqual([]);
+  expect(
+    unwired(wired("src/render/SceneView.tsx"), {
+      calls: {
+        useFaces: [["family", "glyphTextureSize(ratio, maxTextureSize)"]],
+      },
+      values: {
+        ratio: ["useRenderPixels()"],
+        maxTextureSize: ["useRenderPixels()", "useRenderPixels()"],
+      },
+    }),
+  ).toEqual([]);
+  expect(
+    unwired(wired("src/render/glyphTexture.ts"), {
+      imports: { "./resolution": [] },
+      calls: { paintFace: [["face", "family", "texels"]] },
+      values: { perMetre: ["texels / Math.max(face.width, face.height)"] },
+    }),
+  ).toEqual([]);
 });
 
 test("texture tiers step at the documented ratios", () => {

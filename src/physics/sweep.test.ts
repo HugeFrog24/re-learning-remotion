@@ -51,14 +51,14 @@ describe("sweep", () => {
   });
 
   it("tolerates a kinematic overlap below the kinematic epsilon", () => {
-    const grazing = body("k", "kinematic", () =>
-      at([0.02 - KINEMATIC_EPSILON / 2, 0, 0]),
-    );
-    expect(sweep(scene(0, [anchor, grazing]), { hz: 10 })).toEqual([]);
-    const pressing = body("k", "kinematic", () =>
-      at([0.02 - 2 * KINEMATIC_EPSILON, 0, 0]),
-    );
-    expect(sweep(scene(0, [anchor, pressing]), { hz: 10 })).toHaveLength(1);
+    const pressedBy = (overlap: number) =>
+      sweep(
+        scene(0, [anchor, body("k", "kinematic", () => at([0.02 - overlap, 0, 0]))]),
+        { hz: 10 },
+      ).length;
+    expect([KINEMATIC_EPSILON / 2, 2 * KINEMATIC_EPSILON].map(pressedBy)).toEqual([
+      0, 1,
+    ]);
   });
 
   it("holds a hovering body to the kinematic epsilon until its release", () => {

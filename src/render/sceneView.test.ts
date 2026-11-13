@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import track from "../bakes/stencil-seat.json";
 import { stencilSeatScene } from "../chapters/00-stencil-seat/scene";
 import { secondsToFrames } from "../config";
-import { wiringOf } from "../tooling/wiring";
+import { unwired, wiringOf } from "../tooling/wiring";
 import { cameraAt } from "../world/camera";
 import { heldClock, STEADY, type StoryClock } from "../world/clock";
 import { frameView } from "./frameView";
@@ -60,24 +60,32 @@ test("[CAM-03] inside a hold the film runs on while the bodies and the camera st
 });
 
 test("[CAM-03] SceneView takes its camera and body time only from frameView, and CameraRig places the lens with the checks' builder", () => {
-  const view = wired("src/render/SceneView.tsx");
-  for (const bypass of [
-    "cameraAt",
-    "cameraForFrame",
-    "storyTimeOfFrame",
-    "storyAt",
-    "filmAt",
-  ]) {
-    expect(view.names.has(bypass), bypass).toBe(false);
-  }
-  expect(view.calls("frameView")).toEqual([["scene", "clock", "frame", "fps"]]);
-  expect(view.values("view")).toEqual(["frameView(scene, clock, frame, fps)"]);
-  expect(view.values("frame")).toEqual(["useCurrentFrame()"]);
-  expect(view.values("fps")).toEqual(["useVideoConfig()"]);
-  expect(view.props("CameraRig", "setup")).toEqual(["view.camera"]);
-  expect(view.props("Bodies", "t")).toEqual(["view.t"]);
-  expect(view.props("Lights", "camera")).toEqual(["view.camera"]);
-  const stage = wired("src/lib/Stage.tsx");
-  expect(stage.calls("placeCamera")).toEqual([["camera", "setup"]]);
-  expect(stage.imports("../render/lens")).toEqual(["placeCamera"]);
+  expect(
+    unwired(wired("src/render/SceneView.tsx"), {
+      absent: [
+        "cameraAt",
+        "cameraForFrame",
+        "storyTimeOfFrame",
+        "storyAt",
+        "filmAt",
+      ],
+      calls: { frameView: [["scene", "clock", "frame", "fps"]] },
+      values: {
+        view: ["frameView(scene, clock, frame, fps)"],
+        frame: ["useCurrentFrame()"],
+        fps: ["useVideoConfig()"],
+      },
+      props: {
+        "CameraRig.setup": ["view.camera"],
+        "Bodies.t": ["view.t"],
+        "Lights.camera": ["view.camera"],
+      },
+    }),
+  ).toEqual([]);
+  expect(
+    unwired(wired("src/lib/Stage.tsx"), {
+      imports: { "../render/lens": ["placeCamera"] },
+      calls: { placeCamera: [["camera", "setup"]] },
+    }),
+  ).toEqual([]);
 });

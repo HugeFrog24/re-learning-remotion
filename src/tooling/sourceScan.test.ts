@@ -46,18 +46,19 @@ test("[TIME-02] no unseeded randomness or wall-clock reads", () => {
 });
 
 test("the TIME-02 pattern sees every way of reading randomness or the clock", () => {
-  const caught = [
-    "Math.random()",
-    "Date.now()",
-    "new Date()",
-    "const today = Date();",
-    "String(Date(0))",
-    "performance.now()",
-    "crypto.getRandomValues(bytes)",
-    "globalThis.crypto.getRandomValues(new Uint8Array(4))",
-    "crypto.randomUUID()",
-  ];
-  const allowed = ["seeded(7)()", "toDate(x)", "update()", "const dated = 1;"];
+  const caught = `Math.random()
+Date.now()
+new Date()
+const today = Date();
+String(Date(0))
+performance.now()
+crypto.getRandomValues(bytes)
+globalThis.crypto.getRandomValues(new Uint8Array(4))
+crypto.randomUUID()`.split("\n");
+  const allowed = `seeded(7)()
+toDate(x)
+update()
+const dated = 1;`.split("\n");
   expect(caught.filter((line) => !UNSEEDED.test(line))).toEqual([]);
   expect(allowed.filter((line) => UNSEEDED.test(line))).toEqual([]);
 });
@@ -65,12 +66,10 @@ test("the TIME-02 pattern sees every way of reading randomness or the clock", ()
 test("no source runs its own animation loop with R3F's useFrame", () => {
   expect(sources().length).toBeGreaterThan(0);
   expect(offending(SELF_RUNNING, sources())).toEqual([]);
-  expect(
-    [
-      'import { useFrame } from "@react-three/fiber";',
-      "useFrame((state) => state.clock)",
-    ].filter((line) => !SELF_RUNNING.test(line)),
-  ).toEqual([]);
+  expect(SELF_RUNNING.test('import { useFrame } from "@react-three/fiber";')).toBe(
+    true,
+  );
+  expect(SELF_RUNNING.test("useFrame((state) => state.clock)")).toBe(true);
   expect(SELF_RUNNING.test("const frame = useCurrentFrame();")).toBe(false);
 });
 

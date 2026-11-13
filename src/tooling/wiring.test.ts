@@ -1,36 +1,56 @@
 import { expect, test } from "vitest";
-import { wiringOf } from "./wiring";
+import { unwired, wiringOf } from "./wiring";
 
-const SAMPLE = [
-  'import { capToGpu, mirrorTarget } from "./resolution";',
-  'import type { Scene } from "../world/body";',
-  "const Mirror = () => {",
-  "  const { ratio, maxTextureSize } = useRenderPixels();",
-  "  const target = mirrorTarget(ratio,",
-  "    maxTextureSize);",
-  "  material.uniforms.blur.value = target.blurTexels;",
-  "  const options = { textureWidth: target.width };",
-  "  return <Bloom levels={bloom.levels} radius={2} name=\"glow\" />;",
-  "};",
-].join("\n");
+const SAMPLE = `import { capToGpu, mirrorTarget } from "./resolution";
+import type { Scene } from "../world/body";
+const Mirror = () => {
+  const { ratio, maxTextureSize } = useRenderPixels();
+  const target = mirrorTarget(ratio,
+    maxTextureSize);
+  material.uniforms.blur.value = target.blurTexels;
+  const options = { textureWidth: target.width };
+  return <Bloom levels={bloom.levels} radius={2} name="glow" />;
+};`;
 
 test("the wiring reader sees imports, calls, JSX props, bindings and assignments, whatever the formatting", () => {
-  const wiring = wiringOf(SAMPLE);
-  expect(wiring.imports("./resolution")).toEqual(["capToGpu", "mirrorTarget"]);
-  expect(wiring.calls("mirrorTarget")).toEqual([["ratio", "maxTextureSize"]]);
-  expect(wiring.calls("useRenderPixels")).toEqual([[]]);
-  expect(wiring.values("target")).toEqual([
-    "mirrorTarget(ratio, maxTextureSize)",
+  expect(
+    unwired(wiringOf(SAMPLE), {
+      absent: ["cameraAt"],
+      imports: { "./resolution": ["capToGpu", "mirrorTarget"] },
+      calls: {
+        mirrorTarget: [["ratio", "maxTextureSize"]],
+        useRenderPixels: [[]],
+      },
+      values: {
+        target: ["mirrorTarget(ratio, maxTextureSize)"],
+        ratio: ["useRenderPixels()"],
+        "material.uniforms.blur.value": ["target.blurTexels"],
+        textureWidth: ["target.width"],
+      },
+      props: {
+        "Bloom.levels": ["bloom.levels"],
+        "Bloom.radius": ["2"],
+        "Bloom.name": ['"glow"'],
+        "Bloom.missing": [],
+      },
+    }),
+  ).toEqual([]);
+});
+
+test("the wiring check names every mismatch", () => {
+  expect(
+    unwired(wiringOf(SAMPLE), {
+      absent: ["maxTextureSize"],
+      imports: { "./resolution": ["mirrorTarget"] },
+      calls: { mirrorTarget: [["1", "maxTextureSize"]] },
+      values: { textureWidth: ["1080"] },
+      props: { "Bloom.levels": ["6"] },
+    }),
+  ).toEqual([
+    "maxTextureSize is used",
+    'import from ./resolution is ["capToGpu","mirrorTarget"], not ["mirrorTarget"]',
+    'mirrorTarget() is [["ratio","maxTextureSize"]], not [["1","maxTextureSize"]]',
+    'textureWidth is ["target.width"], not ["1080"]',
+    '<Bloom.levels> is ["bloom.levels"], not ["6"]',
   ]);
-  expect(wiring.values("ratio")).toEqual(["useRenderPixels()"]);
-  expect(wiring.values("material.uniforms.blur.value")).toEqual([
-    "target.blurTexels",
-  ]);
-  expect(wiring.values("textureWidth")).toEqual(["target.width"]);
-  expect(wiring.props("Bloom", "levels")).toEqual(["bloom.levels"]);
-  expect(wiring.props("Bloom", "radius")).toEqual(["2"]);
-  expect(wiring.props("Bloom", "name")).toEqual(['"glow"']);
-  expect(wiring.props("Bloom", "missing")).toEqual([]);
-  expect(wiring.names.has("maxTextureSize")).toBe(true);
-  expect(wiring.names.has("cameraAt")).toBe(false);
 });

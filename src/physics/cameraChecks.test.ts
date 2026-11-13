@@ -119,16 +119,12 @@ describe("roughCamera", () => {
     expect(parts(roughCamera(orbit(Math.PI), HZ))).toEqual(["view"]);
   });
 
-  it("flags a fov snap", () => {
-    const snapped = shot((t) => ({ fov: snap(t, 30, 20) }));
-    expect(roughCamera(snapped, HZ)).toEqual([
-      { shot: "probe", part: "fov", t: 0.5, rate: 10 * HZ },
-    ]);
-  });
-
-  it("flags a roll snap", () => {
-    const snapped = shot((t) => ({ roll: snap(t, 0, 0.3) }));
-    expect(parts(roughCamera(snapped, HZ))).toEqual(["roll"]);
+  it.each([
+    { part: "fov", jump: (t: number) => ({ fov: snap(t, 30, 20) }) },
+    { part: "roll", jump: (t: number) => ({ roll: snap(t, 0, 0.25) }) },
+  ])("flags a $part snap at the frame it happens", ({ part, jump }) => {
+    const found = roughCamera(shot(jump), HZ);
+    expect(found.map((each) => [each.part, each.t])).toEqual([[part, 0.5]]);
   });
 
   it("flags a position jump and a target jump", () => {
