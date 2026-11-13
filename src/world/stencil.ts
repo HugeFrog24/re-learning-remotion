@@ -12,15 +12,17 @@ import {
 
 export type Stencil = readonly (number | null)[];
 
-const PLATE_Y = STENCIL_PLATE_THICKNESS / 2;
 const RIM_Z = TILE_SIZE / 2 - RIM_WIDTH / 2;
 
-const solidCell = (cell: number, x: number, byte: number): LocalBox[] => [
+const plateLayer = (name: string, x: number, z: number, depth: number) =>
   box(
-    `plate-c${cell}`,
-    [x, PLATE_Y, 0],
-    [TILE_SIZE, STENCIL_PLATE_THICKNESS, TILE_SIZE],
-  ),
+    name,
+    [x, STENCIL_PLATE_THICKNESS / 2, z],
+    [TILE_PITCH, STENCIL_PLATE_THICKNESS, depth],
+  );
+
+const solidCell = (cell: number, x: number, byte: number): LocalBox[] => [
+  plateLayer(`plate-c${cell}`, x, 0, TILE_SIZE),
   ...bitsOf(byte).map((bit, row) =>
     box(
       `blocker-c${cell}-r${row}`,
@@ -30,19 +32,10 @@ const solidCell = (cell: number, x: number, byte: number): LocalBox[] => [
   ),
 ];
 
-const wildcardCell = (cell: number, x: number): LocalBox[] =>
-  (
-    [
-      ["a", -RIM_Z],
-      ["b", RIM_Z],
-    ] as const
-  ).map(([side, z]) =>
-    box(
-      `rim-c${cell}-${side}`,
-      [x, PLATE_Y, z],
-      [TILE_SIZE, STENCIL_PLATE_THICKNESS, RIM_WIDTH],
-    ),
-  );
+const wildcardCell = (cell: number, x: number): LocalBox[] => [
+  plateLayer(`rim-c${cell}-a`, x, -RIM_Z, RIM_WIDTH),
+  plateLayer(`rim-c${cell}-b`, x, RIM_Z, RIM_WIDTH),
+];
 
 export const stencilBoxes = (stencil: Stencil): readonly LocalBox[] =>
   stencil.flatMap((byte, cell) =>

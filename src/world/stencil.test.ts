@@ -3,9 +3,9 @@ import { BYTE_VALUES, hex2, parsePattern } from "./bytes";
 import { fitsAt, restBottom, seatedBottom } from "./fit";
 import { DEMO_TAPE, FUNCTION_START, SCAN_MATCH } from "./listing";
 import { matchOffsets } from "./scan";
-import type { Stencil } from "./stencil";
+import { stencilBoxes, type Stencil } from "./stencil";
 import { addressOf, indexOf, tapeOf, type Tape } from "./tape";
-import { PIN_PROTRUSION } from "./units";
+import { PIN_PROTRUSION, TILE_PITCH } from "./units";
 
 const single = (byte: number): Tape => ({
   base: 0n,
@@ -53,6 +53,29 @@ describe("stencil", () => {
     const short = seats(tape, parsePattern("CC 48 83 EC ??"));
     expect(short).toHaveLength(1);
     expect(addressOf(tape, short[0] + 1)).toBe(FUNCTION_START);
+  });
+
+  test("stencil plate layer is one continuous piece", () => {
+    const stencil = parsePattern("CC 48 83 EC ??");
+    const extents = stencilBoxes(stencil)
+      .filter((box) => box.center[1] - box.size[1] / 2 >= 0)
+      .map((box) => [
+        box.center[0] - box.size[0] / 2,
+        box.center[0] + box.size[0] / 2,
+      ])
+      .sort((a, b) => a[0] - b[0] || a[1] - b[1])
+      .filter(
+        (extent, i, all) =>
+          i === 0 || extent[0] !== all[i - 1][0] || extent[1] !== all[i - 1][1],
+      );
+    expect(extents).toHaveLength(stencil.length);
+    const ends = [
+      extents[0][0] + TILE_PITCH / 2,
+      extents[extents.length - 1][1] -
+        ((stencil.length - 1) * TILE_PITCH + TILE_PITCH / 2),
+      ...extents.slice(1).map((extent, i) => extent[0] - extents[i][1]),
+    ];
+    expect(ends.filter((gap) => Math.abs(gap) >= 1e-12)).toEqual([]);
   });
 
   test("fitsAt rejects a stencil that overhangs the tape", () => {
