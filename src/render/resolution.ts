@@ -32,9 +32,6 @@ export const bloomLevels = (pixelRatio: number): number =>
 
 export const BLOOM_RADIUS = 0.85;
 
-export const bloomIntensity = (intensity: number, pixelRatio: number): number =>
-  intensity / BLOOM_RADIUS ** Math.log2(textureTier(pixelRatio));
-
 export const bloomExtentFraction = (
   levels: number,
   pixelRatio: number,

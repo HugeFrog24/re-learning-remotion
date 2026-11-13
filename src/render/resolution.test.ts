@@ -7,8 +7,6 @@ import {
   BASE_HEIGHT,
   BASE_WIDTH,
   BLOOM_LEVELS_1080,
-  BLOOM_RADIUS,
-  bloomIntensity,
   bloomExtentFraction,
   bloomLevels,
   CANVAS_DPR,
@@ -72,17 +70,4 @@ test("texture tiers step at the documented ratios", () => {
   expect(textureTier(0.5)).toBe(1);
   expect(glyphTextureSize(1)).toBe(512);
   expect(glyphTextureSize(4)).toBe(2048);
-});
-
-test("bloom intensity keeps each 1080-equivalent mip level at the same weight at every tier", () => {
-  const weight = (level: number, ratio: number) =>
-    bloomIntensity(0.6, ratio) *
-    (1 - BLOOM_RADIUS) *
-    BLOOM_RADIUS ** (level + Math.log2(textureTier(ratio)));
-  for (const r of [1, 2, 4]) {
-    for (let level = 0; level < BLOOM_LEVELS_1080; level++) {
-      expect(weight(level, r)).toBeCloseTo(weight(level, 1), 12);
-    }
-  }
-  expect(bloomIntensity(0.6, 1)).toBe(0.6);
 });

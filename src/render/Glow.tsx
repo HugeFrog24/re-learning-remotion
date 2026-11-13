@@ -1,6 +1,9 @@
 import { useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
-import type { EffectComposer as EffectComposerImpl } from "postprocessing";
+import type {
+  BloomEffect,
+  EffectComposer as EffectComposerImpl,
+} from "postprocessing";
 import {
   useCallback,
   useEffect,
@@ -11,7 +14,8 @@ import {
 import { useCurrentFrame, useDelayRender, useVideoConfig } from "remotion";
 import { useRenderPixels } from "../lib/Stage";
 import { BLOOM } from "./look";
-import { BLOOM_RADIUS, bloomIntensity, bloomLevels } from "./resolution";
+import { pinFineMipSteps } from "./mipmapRadius";
+import { BLOOM_RADIUS, bloomLevels, textureTier } from "./resolution";
 
 export const Glow: React.FC<{ readonly ready: boolean }> = ({ ready }) => {
   const advance = useThree((state) => state.advance);
@@ -28,6 +32,18 @@ export const Glow: React.FC<{ readonly ready: boolean }> = ({ ready }) => {
     hold.current = null;
   }, [continueRender]);
 
+  const pinFineLevels = useCallback(
+    (effect: BloomEffect | null) => {
+      if (effect)
+        pinFineMipSteps(
+          effect.mipmapBlurPass,
+          Math.log2(textureTier(ratio)),
+          BLOOM_RADIUS,
+        );
+    },
+    [ratio],
+  );
+
   useLayoutEffect(() => {
     hold.current = delayRender(`Drawing the glow of frame ${frame}`);
     return release;
@@ -42,9 +58,10 @@ export const Glow: React.FC<{ readonly ready: boolean }> = ({ ready }) => {
   return (
     <EffectComposer ref={setComposer}>
       <Bloom
+        ref={pinFineLevels}
         mipmapBlur
         luminanceThreshold={BLOOM.threshold}
-        intensity={bloomIntensity(BLOOM.intensity, ratio)}
+        intensity={BLOOM.intensity}
         radius={BLOOM_RADIUS}
         levels={bloomLevels(ratio)}
       />
