@@ -29,7 +29,7 @@ export const paintFace = (
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(face.width * perMetre));
   canvas.height = Math.max(1, Math.round(face.height * perMetre));
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) throw new Error("glyph textures need a 2D canvas");
   ctx.fillStyle = face.ground;
   ctx.fillRect(0, 0, canvas.width, canvas.height);

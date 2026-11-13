@@ -68,6 +68,6 @@ test("texture tiers step at the documented ratios", () => {
   expect(textureTier(4)).toBe(4);
   expect(textureTier(8)).toBe(4);
   expect(textureTier(0.5)).toBe(1);
-  expect(glyphTextureSize(1)).toBe(128);
-  expect(glyphTextureSize(4)).toBe(512);
+  expect(glyphTextureSize(1)).toBe(512);
+  expect(glyphTextureSize(4)).toBe(2048);
 });

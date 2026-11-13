@@ -1,54 +1,49 @@
 import type { CameraSetup, Shot } from "../../world/camera";
-import { BASE_HEIGHT, BASE_WIDTH } from "../../render/resolution";
-import { seatedBottom } from "../../world/fit";
-import { poseOver } from "../../world/tape";
-import { TILE_PITCH } from "../../world/units";
+import { poseOver, tileTop } from "../../world/tape";
 import {
   eased,
-  HOVER_LIFT,
   MATCH_INDEX,
   OPENING_HOLD,
   RELEASE_AT,
   START_INDEX,
   STENCIL_SEAT_SECONDS,
 } from "./choreography";
-import { SCAN, TAPE } from "./initialState";
+import { TAPE } from "./initialState";
 
+const DEGREE = Math.PI / 180;
 const FOV = 30;
-const ASPECT = BASE_WIDTH / BASE_HEIGHT;
-const FILL = 0.9;
-const RISE = 0.35;
-const WIDE_MARGIN_TILES = 4;
+const ELEVATION = 36 * DEGREE;
 
-const HALF_WIDTH_SLOPE = Math.tan(((FOV / 2) * Math.PI) / 180) * ASPECT;
-const STENCIL_WIDTH = SCAN.length * TILE_PITCH;
-const LOOK_Y = seatedBottom(TAPE) + HOVER_LIFT;
+type Framing = {
+  readonly yaw: number;
+  readonly distance: number;
+  readonly cell: number;
+};
 
-const centreOver = (index: number) =>
-  poseOver(TAPE, index + (SCAN.length - 1) / 2, LOOK_Y).position[0];
+const WIDE: Framing = { yaw: 55 * DEGREE, distance: 1.6, cell: 5.5 };
+const FOLLOW: Framing = { yaw: 42 * DEGREE, distance: 0.45, cell: 0.5 };
 
-const framing = (x: number, width: number): CameraSetup => {
-  const distance = width / FILL / (2 * HALF_WIDTH_SLOPE);
+const aim = (index: number, { yaw, distance, cell }: Framing): CameraSetup => {
+  const focus = poseOver(TAPE, index + cell, tileTop(TAPE)).position;
+  const [x, y, z] = focus;
+  const across = distance * Math.cos(ELEVATION);
   return {
     position: [
-      x,
-      LOOK_Y + RISE,
-      TAPE.origin[2] + Math.sqrt(distance ** 2 - RISE ** 2),
+      x - across * Math.sin(yaw),
+      y + distance * Math.sin(ELEVATION),
+      z + across * Math.cos(yaw),
     ],
-    target: [x, LOOK_Y, TAPE.origin[2]],
+    target: focus,
     fov: FOV,
     roll: 0,
   };
 };
 
 export const stencilSeatShots = (): readonly Shot[] => {
-  const wide = framing(
-    centreOver(START_INDEX),
-    STENCIL_WIDTH + 2 * WIDE_MARGIN_TILES * TILE_PITCH,
-  );
+  const wide = aim(START_INDEX, WIDE);
   const pan = eased([
-    { at: OPENING_HOLD, values: [centreOver(START_INDEX)] },
-    { at: RELEASE_AT, values: [centreOver(MATCH_INDEX)] },
+    { at: OPENING_HOLD, values: [START_INDEX] },
+    { at: RELEASE_AT, values: [MATCH_INDEX] },
   ]);
   return [
     { name: "wide", from: 0, to: OPENING_HOLD, at: () => wide },
@@ -56,7 +51,7 @@ export const stencilSeatShots = (): readonly Shot[] => {
       name: "follow",
       from: OPENING_HOLD,
       to: STENCIL_SEAT_SECONDS,
-      at: (t) => framing(pan(t)[0], STENCIL_WIDTH),
+      at: (t) => aim(pan(t)[0], FOLLOW),
     },
   ];
 };

@@ -17,7 +17,7 @@ export const textureTier = (pixelRatio: number): 1 | 2 | 4 => {
 export const capToGpu = (size: number, maxTextureSize: number): number =>
   Math.min(size, maxTextureSize);
 
-export const GLYPH_TEXELS_1080 = 128;
+export const GLYPH_TEXELS_1080 = 512;
 
 export const glyphTextureSize = (
   pixelRatio: number,
