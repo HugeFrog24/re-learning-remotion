@@ -11,7 +11,7 @@ import {
 import { useCurrentFrame, useDelayRender, useVideoConfig } from "remotion";
 import { useRenderPixels } from "../lib/Stage";
 import { BLOOM } from "./look";
-import { bloomLevels } from "./resolution";
+import { BLOOM_RADIUS, bloomIntensity, bloomLevels } from "./resolution";
 
 export const Glow: React.FC<{ readonly ready: boolean }> = ({ ready }) => {
   const advance = useThree((state) => state.advance);
@@ -44,7 +44,8 @@ export const Glow: React.FC<{ readonly ready: boolean }> = ({ ready }) => {
       <Bloom
         mipmapBlur
         luminanceThreshold={BLOOM.threshold}
-        intensity={BLOOM.intensity}
+        intensity={bloomIntensity(BLOOM.intensity, ratio)}
+        radius={BLOOM_RADIUS}
         levels={bloomLevels(ratio)}
       />
     </EffectComposer>
